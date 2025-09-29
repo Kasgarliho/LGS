@@ -1,5 +1,4 @@
-// src/hooks/useScheduler.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // useMemo eklendi
 import { storage, NotificationSettings } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -7,18 +6,44 @@ import { ManualSchedule, CustomStudyPlan, StudyPlanEntry } from '@/types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { subjects as allSubjectsData } from '@/data/subjects';
 
-export const useScheduler = (isInitialized: boolean) => {
+// Haftanın günlerini tanımlıyoruz (Pazar=0, Pazartesi=1, ...)
+const weekDaysForLookup = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+
+export const useScheduler = (
+  userId: string | null,
+  isInitialized: boolean
+) => {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(storage.loadNotificationSettings());
   const [manualSchedule, setManualSchedule] = useState<ManualSchedule | null>(storage.loadManualSchedule());
   const [customPlan, setCustomPlan] = useState<CustomStudyPlan | null>(storage.loadCustomStudyPlan());
-  const userId = localStorage.getItem('lgs_app_user_id');
+
+  // =================================================================
+  // YENİ: Yarının derslerini ve akşam olup olmadığını hesaplayan mantık
+  // =================================================================
+  const tomorrowSubjects = useMemo(() => {
+    if (!manualSchedule) return [];
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dayName = weekDaysForLookup[tomorrow.getDay()];
+
+    const subjectsForTomorrow = manualSchedule[dayName] || [];
+    const uniqueSubjectNames = [...new Set(subjectsForTomorrow.map(lesson => lesson.subject).filter(Boolean))];
+    return uniqueSubjectNames;
+  }, [manualSchedule]);
+
+  const isEvening = useMemo(() => {
+    const currentHour = new Date().getHours();
+    return currentHour >= 19; // Akşam saat 19:00'dan sonra başlasın
+  }, []);
+  // =================================================================
 
   const updateUserCloudData = async (dataToUpdate: object) => {
     if (!userId || !isInitialized) return;
     const { error } = await supabase.from('kullanicilar').update(dataToUpdate).eq('id', userId);
     if (error) console.error("Bulut planlama verisi güncellenirken hata oluştu:", error);
   };
-  
+
   useEffect(() => {
     if(userId) {
        supabase
@@ -32,6 +57,9 @@ export const useScheduler = (isInitialized: boolean) => {
             setCustomPlan(data.calisma_programi || storage.loadCustomStudyPlan());
           }
         });
+    } else {
+        setNotificationSettings(storage.loadNotificationSettings());
+        setCustomPlan(storage.loadCustomStudyPlan());
     }
   }, [userId]);
 
@@ -39,12 +67,12 @@ export const useScheduler = (isInitialized: boolean) => {
   useEffect(() => { if (isInitialized) { storage.saveCustomStudyPlan(customPlan); updateUserCloudData({ calisma_programi: customPlan }); } }, [customPlan, isInitialized]);
 
   const handleUpdateNotificationSettings = (settings: NotificationSettings) => setNotificationSettings(settings);
-  
+
   const handleUpdateManualSchedule = (schedule: ManualSchedule) => {
     setManualSchedule(schedule);
     storage.saveManualSchedule(schedule);
   };
-  
+
   const getSubjectName = (subjectId: string) => {
     return allSubjectsData.find(s => s.id === subjectId)?.name || subjectId;
   };
@@ -52,17 +80,17 @@ export const useScheduler = (isInitialized: boolean) => {
   const handleAddPlanEntry = async (newPlanData: Omit<StudyPlanEntry, 'id' | 'notificationId'>) => {
     const notificationId = Date.now();
     const newEntry: StudyPlanEntry = { ...newPlanData, id: notificationId.toString(), notificationId };
-    
+
     if (notificationSettings.studyPlanReminder.enabled) {
       try {
         const weekDaysMap: { [key: string]: number } = { "Pazartesi": 1, "Salı": 2, "Çarşamba": 3, "Perşembe": 4, "Cuma": 5, "Cumartesi": 6, "Pazar": 0 };
         const today = new Date();
         const currentDayIndex = today.getDay();
         const targetDayIndex = weekDaysMap[newEntry.day];
-        
+
         let dayDifference = targetDayIndex - currentDayIndex;
         if (dayDifference < 0) { dayDifference += 7; }
-        
+
         const [hour, minute] = newEntry.timeRange.split(' - ')[0].split(':').map(Number);
         const scheduleDate = new Date();
         scheduleDate.setDate(today.getDate() + dayDifference);
@@ -88,9 +116,9 @@ export const useScheduler = (isInitialized: boolean) => {
         } else {
           toast.warning("Hatırlatıcı geçmiş bir zaman için kurulamaz.");
         }
-      } catch (e) { 
-        console.error("Bildirim hatası:", e); 
-        toast.error("Hatırlatıcı kurulamadı."); 
+      } catch (e) {
+        console.error("Bildirim hatası:", e);
+        toast.error("Hatırlatıcı kurulamadı.");
       }
     }
     setCustomPlan(prevPlan => {
@@ -100,7 +128,7 @@ export const useScheduler = (isInitialized: boolean) => {
       return updatedPlan;
     });
   };
-  
+
   const handleRemovePlanEntry = async (planId: string) => {
     let notificationIdToCancel: number | undefined;
     setCustomPlan(prevPlan => {
@@ -127,6 +155,9 @@ export const useScheduler = (isInitialized: boolean) => {
     handleUpdateNotificationSettings,
     handleUpdateManualSchedule,
     handleAddPlanEntry,
-    handleRemovePlanEntry
+    handleRemovePlanEntry,
+    // YENİ: Hesaplanan değerleri dışarıya açıyoruz
+    tomorrowSubjects,
+    isEvening,
   };
 };

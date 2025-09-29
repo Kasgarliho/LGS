@@ -1,4 +1,3 @@
-// src/hooks/useAuth.ts
 import { useState, useEffect } from 'react';
 import { storage } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
@@ -6,21 +5,18 @@ import { toast } from 'sonner';
 import { playIntroSound } from '@/utils/sounds';
 
 export const useAuth = (isMuted: boolean) => {
-  const [userName, setUserName] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(() => localStorage.getItem('lgs_app_user_id'));
+  const [userName, setUserName] = useState<string | null>(() => storage.loadUserName());
   const [showNameModal, setShowNameModal] = useState(false);
   const [tempName, setTempName] = useState("");
   const [className, setClassName] = useState("");
   const [coachCode, setCoachCode] = useState("");
 
   useEffect(() => {
-    const storedName = storage.loadUserName();
-    const storedUserId = localStorage.getItem('lgs_app_user_id');
-    if (storedUserId && storedName) {
-      setUserName(storedName);
-    } else {
+    if (!userId || !userName) {
       setShowNameModal(true);
     }
-  }, []);
+  }, [userId, userName]);
 
   const handleRegistration = async () => {
     const finalName = tempName.trim().toUpperCase();
@@ -37,7 +33,7 @@ export const useAuth = (isMuted: boolean) => {
             .select('eposta')
             .ilike('koc_kodu', finalCoachCode)
             .single();
-        
+
         if (coachError || !coachData) {
             toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
             return;
@@ -87,15 +83,16 @@ export const useAuth = (isMuted: boolean) => {
             .from('ogrenciler')
             .update({ baglanan_kullanici_id: newUserId })
             .eq('id', studentData.id);
-        
+
         localStorage.setItem('lgs_app_user_id', newUserId);
         storage.saveUserName(studentData.ad_soyad);
-        setUserName(studentData.ad_soyad);
+        setUserId(newUserId); // State'i güncelle
+        setUserName(studentData.ad_soyad); // State'i güncelle
         setShowNameModal(false);
         toast.success(`Hoş geldin, ${studentData.ad_soyad}! Giriş başarılı.`);
         playIntroSound(isMuted);
 
-        setTimeout(() => window.location.reload(), 1000); 
+        // SAYFA YENİLEME SATIRI KALDIRILDI!
 
     } catch (error) {
         console.error("Kayıt sırasında beklenmedik hata:", error);
@@ -104,6 +101,7 @@ export const useAuth = (isMuted: boolean) => {
   };
 
   return {
+    userId,
     userName,
     showNameModal,
     tempName,

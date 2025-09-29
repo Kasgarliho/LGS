@@ -49,9 +49,9 @@ export default function Header({
           />
         </Link>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">Selam, {firstName}!</h1>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">Hey, {firstName}!</h1>
           <p className="text-xs md:text-sm text-muted-foreground">
-            {isHomePage}"Bugünkü hedeflerine ulaşmaya hazır mısın?"
+            {isHomePage}
           </p>
           
           {/* KALDIRILDI: Seviye ve Puan ilerleme çubuğu buradan kaldırıldı. */}

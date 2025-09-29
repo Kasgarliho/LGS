@@ -3,98 +3,98 @@ import React from 'react';
 export type StudyType = 'Konu Tekrarı' |'Test Çözme' | 'Ödev' | 'Diğer';
 
 export interface Subject {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-  color: 'primary' | 'success' | 'warning';
-  targetQuestions: number;
-  correct: number;
-  incorrect: number;
-  topics: string[];
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: 'primary' | 'success' | 'warning';
+  targetQuestions: number;
+  correct: number;
+  incorrect: number;
+  topics: string[];
 }
 
 export interface StudySession {
-  id: string;
-  subjectId: string;
-  duration: number; // in minutes
-  questionsCompleted: number;
-  correctCount: number;
-  incorrectCount: number;
-  date: Date;
-  topic: string;
+  id: string;
+  subjectId: string;
+  duration: number; // in minutes
+  questionsCompleted: number;
+  correctCount: number;
+  incorrectCount: number;
+  date: Date;
+  topic: string;
 }
 
 export interface Question {
-  id: string;
-  subjectId: string;
-  topic: string;
-  difficulty: 'easy' | 'medium' | 'hard';
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
+  id: string;
+  subjectId: string;
+  topic: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  explanation: string;
 }
 
 export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  unlockedAt?: Date;
-  category: 'questions' | 'subject' | 'streak' | 'special';
-  requiredQuestions?: number;
-  requiredSubjectId?: string;
-  requirement?: string;
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  unlockedAt?: Date;
+  category: 'questions' | 'subject' | 'streak' | 'special';
+  requiredQuestions?: number;
+  requiredSubjectId?: string;
+  requirement?: string;
 }
 
 export interface SolvedStat {
-  subjectId: string;
-  topic: string;
-  correct: boolean;
+  subjectId: string;
+  topic: string;
+  correct: boolean;
 }
 
 export interface ManualScheduleEntry {
-  subject: string;
-  teacher: string;
+  subject: string;
+  teacher: string;
 }
 
 export interface ManualSchedule {
-  [day: string]: ManualScheduleEntry[];
+  [day: string]: ManualScheduleEntry[];
 }
 
 export interface UserAvatars {
-  current: string;
-  unlocked: string[];
+  current: string;
+  unlocked: string[];
 }
 
 export interface LearnedWords {
-  known: string[];
-  unknown: string[];
+  known: string[];
+  unknown: string[];
 }
 
 export interface StudyPlanEntry {
-  id: string;
-  day: string;
-  timeRange: string;
-  subjectId: string;
-  studyType: StudyType;
-  details?: string;
-  notificationId?: number;
+  id: string;
+  day: string;
+  timeRange: string;
+  subjectId: string;
+  studyType: StudyType;
+  details?: string;
+  notificationId?: number;
 }
 
 export interface CustomStudyPlan {
-  [day: string]: StudyPlanEntry[];
+  [day: string]: StudyPlanEntry[];
 }
 
 export interface DailyWordData {
-  id: string;
-  unit: number;
-  word: string;
-  meaning: string;
-  example: string;
-  exampleMeaning: string;
+  id: string;
+  unit: number;
+  word: string;
+  meaning: string;
+  example: string;
+  exampleMeaning: string;
 }
 
 export interface NotificationSettings {
@@ -152,7 +152,12 @@ export type AppContextType = {
   handleUpdateManualSchedule: (schedule: ManualSchedule) => void;
   handleAddPlanEntry: (newPlanData: Omit<StudyPlanEntry, 'id' | 'notificationId'>) => Promise<void>;
   handleRemovePlanEntry: (planId: string) => Promise<void>;
-  
+  // =================================================================
+  // YENİ EKLENEN TİPLER
+  // =================================================================
+  tomorrowSubjects: string[];
+  isEvening: boolean;
+
   // AppLayout'tan gelenler
   isMuted: boolean;
   toggleMute: () => void;

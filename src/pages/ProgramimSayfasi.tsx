@@ -10,17 +10,17 @@ import { cn } from "@/lib/utils";
 import { StudyPlanEntry, ManualSchedule } from "@/types";
 import { toast } from "sonner";
 import { subjects as allSubjects } from '@/data/subjects';
-import { emptySchedule } from '@/data/schedule'; 
+import { emptySchedule } from '@/data/schedule';
 
 const weekDays = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const lessonHours = [1, 2, 3, 4, 5, 6, 7, 8];
 
 export default function ProgramimSayfasi() {
   const { manualSchedule, customPlan, handleUpdateManualSchedule, handleAddPlanEntry, handleRemovePlanEntry } = useAppContext();
-  
+
   const todayIndex = new Date().getDay();
   const todayKey = weekDays[todayIndex - 1] || weekDays[0];
-  
+
   const [selectedDay, setSelectedDay] = useState(todayKey);
   const [isPlanDialogOpen, setIsPlanDialogOpen] = useState(false);
   const [isEditingManual, setIsEditingManual] = useState(false);
@@ -29,7 +29,7 @@ export default function ProgramimSayfasi() {
     const schedule = manualSchedule || emptySchedule;
     return schedule[selectedDay] || [];
   }, [manualSchedule, selectedDay]);
-  
+
   const getSubjectName = (subjectId: string) => {
     return allSubjects.find(s => s.id === subjectId)?.name || subjectId;
   };
@@ -63,9 +63,6 @@ export default function ProgramimSayfasi() {
   return (
     <div className="p-4">
       <Tabs defaultValue="ders-programim" className="w-full">
-        {/* ================================================================= */}
-        {/* DEĞİŞİKLİK BURADA: Sekme başlıkları renklendirildi */}
-        {/* ================================================================= */}
         <TabsList className="grid w-full grid-cols-2 card-canli gradient-mor metin-beyaz">
           <TabsTrigger value="ders-programim" className="text-white">Ders Programım</TabsTrigger>
           <TabsTrigger value="calisma-planim" className="text-white">Çalışma Planım</TabsTrigger>
@@ -76,7 +73,7 @@ export default function ProgramimSayfasi() {
           <div className="space-y-4">
             <div className="grid grid-cols-5 gap-2">
               {weekDays.map(day => (
-                <Button 
+                <Button
                   key={day}
                   onClick={() => setSelectedDay(day)}
                   variant={selectedDay === day ? "default" : "outline"}
@@ -102,32 +99,37 @@ export default function ProgramimSayfasi() {
               {lessonsForSelectedDay.length > 0 ? (
                 lessonsForSelectedDay.map((lesson, index) => (
                   <Card key={index} className="bg-background/80">
-                    <CardContent 
+                    <CardContent
                       className={cn(
                         "p-4 flex items-center justify-between",
-                        index % 2 === 0 ? "bg-indigo-50 text-indigo-900" : "bg-white text-gray-800",
+                        // =================================================================
+                        // DÜZELTME BURADA YAPILDI: Karanlık mod için arka plan renkleri eklendi
+                        // =================================================================
+                        index % 2 === 0
+                          ? "bg-indigo-50 text-indigo-900 dark:bg-muted/30"
+                          : "bg-white text-gray-800 dark:bg-card/80",
                         'dark:text-foreground'
                       )}
                     >
                       {isEditingManual ? (
                         <div className="flex w-full items-center gap-2">
-                          <span className="text-sm font-bold w-16 dark:text-muted-foreground">{index + 1}. Ders</span>
-                          <Input 
+                          <span className="text-sm font-bold w-16">{index + 1}. Ders</span>
+                          <Input
                             value={lesson.subject}
                             onChange={(e) => handleChangeManual(index, "subject", e.target.value)}
                             placeholder="Ders"
-                            className="flex-1 h-8 dark:text-foreground dark:placeholder-foreground"
+                            className="flex-1 h-8"
                           />
-                          <Input 
+                          <Input
                             value={lesson.teacher}
                             onChange={(e) => handleChangeManual(index, "teacher", e.target.value)}
                             placeholder="Öğretmen"
-                            className="flex-1 h-8 text-xs dark:text-foreground dark:placeholder-foreground"
+                            className="flex-1 h-8 text-xs"
                           />
                         </div>
                       ) : (
                         <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold w-16 dark:text-muted-foreground">{index + 1}. Ders</span>
+                          <span className="text-sm font-bold w-16">{index + 1}. Ders</span>
                           <div>
                             <p className="font-semibold">{lesson.subject || "-"}</p>
                             <p className="text-xs text-muted-foreground">{lesson.teacher}</p>
@@ -181,7 +183,7 @@ export default function ProgramimSayfasi() {
             </CardContent>
           </Card>
 
-          <Button 
+          <Button
             onClick={() => setIsPlanDialogOpen(true)}
             className="absolute bottom-4 right-4 h-14 w-14 rounded-full bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg"
           >
@@ -189,8 +191,8 @@ export default function ProgramimSayfasi() {
           </Button>
         </TabsContent>
       </Tabs>
-      
-      <AddStudyPlanDialog 
+
+      <AddStudyPlanDialog
         open={isPlanDialogOpen}
         onOpenChange={setIsPlanDialogOpen}
         onSave={handleSaveNewPlan}

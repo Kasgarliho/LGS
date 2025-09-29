@@ -13,17 +13,17 @@ export const ProfilePage = () => {
   const [showAchievements, setShowAchievements] = useState(false);
 
   const sortedAvatars = useMemo(() => {
-    const unlockedAvatars = allAvatars.filter(avatar => 
+    const unlockedAvatars = allAvatars.filter(avatar =>
       (userAvatars?.unlocked || []).includes(avatar.id)
     );
-    
+
     return [...unlockedAvatars].sort((a, b) => {
       if (a.id === 'default') return -1;
       if (b.id === 'default') return 1;
       return 0;
     });
   }, [userAvatars?.unlocked]);
-  
+
   const sortedAchievements = useMemo(() => {
     const safeAchievements = achievements || [];
     return [...safeAchievements].sort((a, b) => {
@@ -41,10 +41,10 @@ export const ProfilePage = () => {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {sortedAchievements.map((achievement: Achievement) => (
-          <Card 
-            key={achievement.id} 
+          <Card
+            key={achievement.id}
             className={cn(
-              "relative transition-all duration-300", 
+              "relative transition-all duration-300",
               achievement.unlocked ? "bg-card/90" : "bg-card/50 opacity-60"
             )}
           >
@@ -64,21 +64,21 @@ export const ProfilePage = () => {
   return (
     <div className="space-y-6 animate-slide-up">
       <div className="flex justify-center gap-4 mt-6">
-        <Button 
+        <Button
           onClick={() => setShowAvatars(!showAvatars)}
           className="gap-2 w-full max-w-sm"
           variant={showAvatars ? "default" : "outline"}
         >
           <UserRound className="h-5 w-5" />
-          {showAvatars ? "Avatarları Gizle" : "Avatarlarımı Görüntüle"}
+          {showAvatars ? "Avatarları Gizle" : "Avatarları Görüntüle"}
         </Button>
-        <Button 
+        <Button
           onClick={() => setShowAchievements(!showAchievements)}
           className="gap-2 w-full max-w-sm"
           variant={showAchievements ? "default" : "outline"}
         >
           <Trophy className="h-5 w-5" />
-          {showAchievements ? "Başarımları Gizle" : "Başarımlarımı Görüntüle"}
+          {showAchievements ? "Başarımları Gizle" : "Başarımları Görüntüle"}
         </Button>
       </div>
 
@@ -92,10 +92,10 @@ export const ProfilePage = () => {
             <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
               {sortedAvatars.map(avatar => {
                 const isCurrent = userAvatars?.current === avatar.id;
-                
+
                 return (
-                  <div 
-                    key={avatar.id} 
+                  <div
+                    key={avatar.id}
                     className={cn(
                       "relative flex flex-col items-center gap-2 p-2 rounded-lg border-2 transition-all duration-300",
                       isCurrent ? 'border-white shadow-lg scale-105 bg-white/20' : 'border-transparent',
@@ -103,10 +103,13 @@ export const ProfilePage = () => {
                     )}
                     onClick={() => handleSetAvatar(avatar.id)}
                   >
-                    <img 
-                      src={avatar.image} 
-                      alt={avatar.name} 
-                      className="w-24 h-24 rounded-full" 
+                    {/* ================================================================= */}
+                    {/* DÜZELTME BURADA YAPILDI: aspect-square ve object-cover eklendi   */}
+                    {/* ================================================================= */}
+                    <img
+                      src={avatar.image}
+                      alt={avatar.name}
+                      className="w-24 h-24 rounded-full aspect-square object-cover"
                     />
                     {isCurrent && (
                       <div className="absolute top-0 right-0 bg-white text-violet-500 rounded-full p-1">
