@@ -1,19 +1,17 @@
-import { Outlet, useOutletContext, useLocation } from "react-router-dom";
+import { Outlet, useOutletContext, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { storage } from "@/utils/storage";
 import { toast } from 'sonner';
 import { AppContextType, SolvedStat } from '@/types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playFailSound } from '@/utils/sounds';
+import { App } from '@capacitor/app';
 
-// UI Bileşenleri
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-// Oluşturduğumuz Hook'lar
 import { useAuth } from '@/hooks/useAuth';
 import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
@@ -22,15 +20,16 @@ import { useScheduler } from '@/hooks/useScheduler';
 export default function AppLayout() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMuted, setIsMuted] = useState(() => storage.loadIsMuted());
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => storage.loadTheme() || 'dark');
+  const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
 
   const auth = useAuth(isMuted);
-  const { userId, userName } = auth;
+  const { userId, userName, handleLogout, handleSwitchUser, knownUsers } = auth;
 
   const coreData = useCoreData(userId, isInitialized, isMuted);
-
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
     coreData.setTotalPoints(prev => prev + (result.correct * 10));
     if (newDailySolvedCount === 3) {
@@ -40,8 +39,40 @@ export default function AppLayout() {
       toast.info("Harika bir paket tamamladın, devam et! 🎉");
     }
   });
-
   const scheduler = useScheduler(userId, isInitialized);
+
+  useEffect(() => {
+    if (userId) {
+      setTheme(storage.loadTheme(userId));
+    } else {
+      setTheme('dark');
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    const checkDeepLink = async () => {
+      const listener = await App.addListener('appUrlOpen', (event) => {
+        if (event && event.url) {
+          const path = new URL(event.url).pathname.replace('/app', '');
+          if (path) {
+            navigate(path);
+          }
+        }
+      });
+      const initialUrl = await App.getLaunchUrl();
+      if (initialUrl && initialUrl.url) {
+          const path = new URL(initialUrl.url).pathname.replace('/app', '');
+          if (path) {
+              navigate(path);
+          }
+      }
+      return listener;
+    };
+    const listener = checkDeepLink();
+    return () => {
+      listener.then(l => l.remove());
+    };
+  }, [navigate]);
 
   useEffect(() => {
     if (userId) {
@@ -85,21 +116,22 @@ export default function AppLayout() {
   }, [coreData.isCloudDataLoaded, userId]);
 
   useEffect(() => { storage.saveIsMuted(isMuted); }, [isMuted]);
+  
   useEffect(() => {
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
-    storage.saveTheme(theme);
-  }, [theme]);
+    if (theme) {
+      document.documentElement.classList.remove('light', 'dark');
+      document.documentElement.classList.add(theme);
+      if (userId) {
+        storage.saveTheme(userId, theme);
+      }
+    }
+  }, [theme, userId]);
 
   const toggleMute = () => setIsMuted(prev => !prev);
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
-  // =================================================================
-  // DÜZELTME BURADA: Parametre adı 'solvedStats' olarak güncellendi.
-  // =================================================================
   const handleQuizCompletion = async (solvedStats: SolvedStat[], subjectId: string) => {
     await studyData.handleQuizCompletion(solvedStats, subjectId);
-    // Yanlış sayısı artık doğru hesaplanacak
     const incorrectCount = solvedStats.filter(s => !s.correct).length;
     coreData.checkAchievements(studyData.subjects, {
       type: 'quiz',
@@ -122,50 +154,79 @@ export default function AppLayout() {
     handleQuizCompletion,
     handleEnglishUnitUnlocked,
     isMuted,
-    toggleMute
+    toggleMute,
+    handleLogout,
+    handleSwitchUser,
+    knownUsers,
   };
+  
+  const renderLoginUI = () => (
+    <Dialog open={auth.showNameModal || auth.showProfileSelector}>
+      <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
+        {auth.showNameModal ? (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle>
+              <DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              <Input placeholder="Adın Soyadın..." value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
+              <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
+              <Input placeholder="Koç Kodu (Coşkun Hoca)" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
+              <Button onClick={auth.handleRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
+              {knownUsers.length > 0 && (
+                <Button variant="ghost" className="w-full" onClick={() => { auth.setShowNameModal(false); }}>Geri</Button>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <DialogHeader>
+              <DialogTitle className="text-2xl">Profil Seç</DialogTitle>
+              <DialogDescription>Devam etmek için bir profil seç veya yeni bir hesapla giriş yap.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-2">
+              {knownUsers.map(user => (
+                <Button key={user.userId} variant="outline" className="w-full justify-start" onClick={() => handleSwitchUser(user.userId)}>{user.userName}</Button>
+              ))}
+              <Button className="w-full mt-4" onClick={auth.showRegistration}>Yeni Hesapla Giriş Yap</Button>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 
   return (
     <>
-      <Dialog open={auth.showNameModal}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle>
-            <DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <Input placeholder="Adın Soyadın..." value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
-            <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
-            <Input placeholder="Koç Kodu" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
-            <Button onClick={auth.handleRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <div className="max-w-7xl mx-auto p-4 pb-24">
-        <Header
-          userName={userName}
-          totalQuestions={totalQuestions}
-          streak={coreData.streak}
-          unlockedAchievements={unlockedAchievements}
-          totalPoints={coreData.totalPoints}
-          theme={theme}
-          toggleTheme={toggleTheme}
-          currentAvatarId={coreData.userAvatars.current}
-          isMuted={isMuted}
-          toggleMute={toggleMute}
-          isHomePage={isHomePage}
-        />
-        <main>
-          <div className="animate-slide-up">
-            <Outlet context={contextValue} />
-          </div>
-        </main>
-      </div>
-      <BottomNav isMuted={isMuted} />
+      {!userId && renderLoginUI()}
+      
+      {theme && (
+        <div className={`max-w-7xl mx-auto p-4 pb-24 ${!userId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <Header
+            userName={userName}
+            totalQuestions={totalQuestions}
+            streak={coreData.streak}
+            unlockedAchievements={unlockedAchievements}
+            totalPoints={coreData.totalPoints}
+            theme={theme}
+            toggleTheme={toggleTheme}
+            currentAvatarId={coreData.userAvatars.current}
+            isMuted={isMuted}
+            toggleMute={toggleMute}
+            isHomePage={isHomePage} // YENİ: Bu prop geri eklendi
+          />
+          <main>
+            <div className="animate-slide-up">
+              <Outlet context={contextValue} />
+            </div>
+          </main>
+        </div>
+      )}
+      {userId && <BottomNav isMuted={isMuted} />}
     </>
   );
-};
+}
 
 export function useAppContext(): AppContextType {
   return useOutletContext<AppContextType>();

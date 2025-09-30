@@ -10,10 +10,10 @@ import NotFound from "./pages/NotFound";
 import Statistics from "@/components/Statistics";
 import AchievementsList from "@/components/AchievementsList";
 import PracticePage from "./pages/PracticePage";
-import { MarketPage } from "./pages/MarketPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { SettingsPage } from "./pages/SettingsPage";
-// YENİ SAYFANIN IMPORT'U EKLENDİ
+// DÜZELTME: Süslü parantezler kaldırıldı.
+import {MarketPage} from "./pages/MarketPage";
+import ProfilePage from "./pages/ProfilePage";
+import {SettingsPage} from "./pages/SettingsPage";
 import GecmisKayitlarSayfasi from "./pages/GecmisKayitlarSayfasi";
 
 const queryClient = new QueryClient();
@@ -40,7 +40,6 @@ const router = createBrowserRouter([
       { path: "market", element: <MarketPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "settings", element: <SettingsPage /> },
-      // YENİ SAYFANIN YOLU (ROUTE) EKLENDİ
       { path: "gecmis", element: <GecmisKayitlarSayfasi /> },
     ],
   },

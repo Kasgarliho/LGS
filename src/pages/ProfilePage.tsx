@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Achievement } from "@/types";
 
-export const ProfilePage = () => {
+export default function ProfilePage() {
   const { userAvatars, handleSetAvatar, achievements } = useAppContext();
   const [showAvatars, setShowAvatars] = useState(true);
   const [showAchievements, setShowAchievements] = useState(false);
@@ -27,12 +27,8 @@ export const ProfilePage = () => {
   const sortedAchievements = useMemo(() => {
     const safeAchievements = achievements || [];
     return [...safeAchievements].sort((a, b) => {
-      if (a.unlocked && !b.unlocked) {
-        return -1;
-      }
-      if (!a.unlocked && b.unlocked) {
-        return 1;
-      }
+      if (a.unlocked && !b.unlocked) return -1;
+      if (!a.unlocked && b.unlocked) return 1;
       return 0;
     });
   }, [achievements]);
@@ -70,7 +66,7 @@ export const ProfilePage = () => {
           variant={showAvatars ? "default" : "outline"}
         >
           <UserRound className="h-5 w-5" />
-          {showAvatars ? "Avatarları Gizle" : "Avatarları Görüntüle"}
+          {showAvatars ? "Avatarları Gizle" : "Avatarlarımı Görüntüle"}
         </Button>
         <Button
           onClick={() => setShowAchievements(!showAchievements)}
@@ -78,7 +74,7 @@ export const ProfilePage = () => {
           variant={showAchievements ? "default" : "outline"}
         >
           <Trophy className="h-5 w-5" />
-          {showAchievements ? "Başarımları Gizle" : "Başarımları Görüntüle"}
+          {showAchievements ? "Başarımları Gizle" : "Başarımlarımı Görüntüle"}
         </Button>
       </div>
 
@@ -89,7 +85,7 @@ export const ProfilePage = () => {
             <CardDescription className="metin-acik-gri">Mevcut avatarını seç.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
               {sortedAvatars.map(avatar => {
                 const isCurrent = userAvatars?.current === avatar.id;
 
@@ -103,13 +99,10 @@ export const ProfilePage = () => {
                     )}
                     onClick={() => handleSetAvatar(avatar.id)}
                   >
-                    {/* ================================================================= */}
-                    {/* DÜZELTME BURADA YAPILDI: aspect-square ve object-cover eklendi   */}
-                    {/* ================================================================= */}
                     <img
                       src={avatar.image}
                       alt={avatar.name}
-                      className="w-24 h-24 rounded-full aspect-square object-cover"
+                      className="w-20 h-20 md:w-24 md:h-24 rounded-full aspect-square object-cover"
                     />
                     {isCurrent && (
                       <div className="absolute top-0 right-0 bg-white text-violet-500 rounded-full p-1">

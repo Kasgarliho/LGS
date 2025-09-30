@@ -3,8 +3,6 @@ import { Moon, Sun, Trophy, Flame, Target, Star, Volume2, VolumeX, ShoppingCart,
 import { Link } from "react-router-dom";
 import { avatars } from "@/data/avatars";
 
-// Progress bileşeni artık kullanılmadığı için importu kaldırıldı.
-
 interface HeaderProps {
   userName: string | null;
   totalQuestions: number;
@@ -16,7 +14,7 @@ interface HeaderProps {
   currentAvatarId: string;
   isMuted: boolean;
   toggleMute: () => void;
-  isHomePage: boolean;
+  isHomePage: boolean; // YENİ: Bu prop geri eklendi
 }
 
 export default function Header({ 
@@ -30,13 +28,14 @@ export default function Header({
   currentAvatarId,
   isMuted,
   toggleMute,
-  isHomePage
+  isHomePage // YENİ: Prop olarak alındı
 }: HeaderProps) {
   
   const currentAvatar = avatars.find(a => a.id === currentAvatarId) || avatars[0];
   const firstName = userName ? userName.split(' ')[0] : 'Misafir';
-
-  // Seviye ve Puan ilerlemesi için gerekli hesaplamalar kaldırıldı.
+  
+  // KALDIRILDI: Hatalı olan ve reaktif çalışmayan window.location satırı kaldırıldı.
+  // const isHomePage = window.location.pathname === '/';
 
   const renderHeaderContent = () => (
     <div className="flex items-center justify-between p-3 md:p-4 rounded-xl shadow-card bg-card">
@@ -50,11 +49,6 @@ export default function Header({
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">Hey, {firstName}!</h1>
-          <p className="text-xs md:text-sm text-muted-foreground">
-            {isHomePage}
-          </p>
-          
-          {/* KALDIRILDI: Seviye ve Puan ilerleme çubuğu buradan kaldırıldı. */}
         </div>
       </div>
       

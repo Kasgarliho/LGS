@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Achievement, UserAvatars, Subject } from '@/types';
 import { achievements as initialAchievementsData } from '@/data/achievements';
 import { avatars as allAvatars } from "@/data/avatars";
-import { playPurchaseSound, playConfirmSound, playFailSound } from "@/utils/sounds";
+import { playPurchaseSound, playConfirmSound } from "@/utils/sounds";
 
 export const useCoreData = (
   userId: string | null,
@@ -21,7 +21,6 @@ export const useCoreData = (
 
   const updateUserCloudData = async (dataToUpdate: object) => {
     if (!userId || !isInitialized || !isCloudDataLoaded) return;
-
     const { error } = await supabase.from('kullanicilar').update(dataToUpdate).eq('id', userId);
     if (error) console.error("Bulut verisi güncellenirken hata oluştu:", error);
   };
@@ -37,20 +36,21 @@ export const useCoreData = (
 
         if (error || !cloudData) {
           console.error("Bulut çekirdek verileri çekilemedi, lokal veriler kullanılacak:", error);
-          setTotalPoints(storage.loadPoints());
-          setStreak(storage.loadStreak());
-          setStreakFreezes(storage.loadStreakFreezes());
-          setUserAvatars(storage.loadUserAvatars());
-          setAchievements(storage.loadAchievements().length > 0 ? storage.loadAchievements() : initialAchievementsData);
+          setTotalPoints(storage.loadPoints(userId));
+          setStreak(storage.loadStreak(userId));
+          setStreakFreezes(storage.loadStreakFreezes(userId));
+          setUserAvatars(storage.loadUserAvatars(userId));
+          const loadedAchievements = storage.loadAchievements(userId);
+          setAchievements(loadedAchievements.length > 0 ? loadedAchievements : initialAchievementsData);
         } else {
           setTotalPoints(cloudData.puan ?? 0);
           setStreak(cloudData.seri ?? 0);
           setStreakFreezes(cloudData.seri_dondurma ?? 0);
           try {
             const parsedAvatars = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar;
-            setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : storage.loadUserAvatars());
+            setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : storage.loadUserAvatars(userId));
           } catch (e) {
-            setUserAvatars(storage.loadUserAvatars());
+            setUserAvatars(storage.loadUserAvatars(userId));
           }
           const unlockedAchievementIds = new Set(cloudData.kazanilan_basarimlar || []);
           const syncedAchievements = initialAchievementsData.map(ach => ({ ...ach, unlocked: unlockedAchievementIds.has(ach.id) }));
@@ -60,17 +60,17 @@ export const useCoreData = (
       };
       fetchCoreData();
     } else {
-        setTotalPoints(storage.loadPoints());
-        setStreak(storage.loadStreak());
-        setStreakFreezes(storage.loadStreakFreezes());
-        setUserAvatars(storage.loadUserAvatars());
-        setAchievements(storage.loadAchievements().length > 0 ? storage.loadAchievements() : initialAchievementsData);
-        setIsCloudDataLoaded(true);
+      setTotalPoints(0);
+      setStreak(0);
+      setStreakFreezes(0);
+      setUserAvatars({ current: 'default', unlocked: ['default'] });
+      setAchievements(initialAchievementsData);
+      setIsCloudDataLoaded(true);
     }
   }, [userId]);
   
   useEffect(() => {
-    if (!isInitialized || achievements.length === 0) return;
+    if (!isInitialized || !userId || achievements.length === 0) return;
     const unlockedAchievements = achievements.filter(a => a.unlocked);
     const avatarsToUnlock = allAvatars.filter(avatar =>
       avatar.unlockMethod === 'achievement' &&
@@ -86,21 +86,22 @@ export const useCoreData = (
         return currentAvatars;
       });
     }
-  }, [achievements, isInitialized]);
+  }, [achievements, isInitialized, userId]);
 
-  useEffect(() => { if (isInitialized) { storage.savePoints(totalPoints); updateUserCloudData({ puan: totalPoints }); } }, [totalPoints, isInitialized]);
-  useEffect(() => { if (isInitialized) { storage.saveStreak(streak); updateUserCloudData({ seri: streak }); } }, [streak, isInitialized]);
-  useEffect(() => { if (isInitialized) { storage.saveStreakFreezes(streakFreezes); updateUserCloudData({ seri_dondurma: streakFreezes }); } }, [streakFreezes, isInitialized]);
-  useEffect(() => { if (isInitialized && userAvatars) { storage.saveUserAvatars(userAvatars); updateUserCloudData({ avatar: userAvatars }); } }, [userAvatars, isInitialized]);
+  useEffect(() => { if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } }, [totalPoints, isInitialized, userId]);
+  useEffect(() => { if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } }, [streak, isInitialized, userId]);
+  useEffect(() => { if (isInitialized && userId) { storage.saveStreakFreezes(userId, streakFreezes); updateUserCloudData({ seri_dondurma: streakFreezes }); } }, [streakFreezes, isInitialized, userId]);
+  useEffect(() => { if (isInitialized && userId && userAvatars) { storage.saveUserAvatars(userId, userAvatars); updateUserCloudData({ avatar: userAvatars }); } }, [userAvatars, isInitialized, userId]);
   useEffect(() => {
-    if (isInitialized && achievements.length > 0) {
-      storage.saveAchievements(achievements);
+    if (isInitialized && userId && achievements.length > 0) {
+      storage.saveAchievements(userId, achievements);
       const unlockedIds = achievements.filter(a => a.unlocked).map(a => a.id);
       if (unlockedIds.length > 0 || isCloudDataLoaded) updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
     }
-  }, [achievements, isInitialized, isCloudDataLoaded]);
+  }, [achievements, isInitialized, isCloudDataLoaded, userId]);
 
   const handleBuyStreakFreeze = () => {
+    if (!userId) return;
     const price = 200;
     if (totalPoints >= price) {
       setTotalPoints(prev => prev - price);
@@ -113,6 +114,7 @@ export const useCoreData = (
   };
 
   const handleBuyAvatar = (avatarId: string) => {
+    if (!userId) return;
     const avatar = allAvatars.find(a => a.id === avatarId);
     if (!avatar || avatar.unlockMethod !== 'purchase') return;
     const price = avatar.price || 0;
@@ -127,6 +129,7 @@ export const useCoreData = (
   };
 
   const handleSetAvatar = (avatarId: string) => {
+    if (!userId) return;
     if ((userAvatars?.unlocked || []).includes(avatarId)) {
       setUserAvatars(prev => ({ ...prev, current: avatarId }));
       toast.success("Avatarın değiştirildi!");
@@ -135,16 +138,14 @@ export const useCoreData = (
   };
   
   const checkAchievements = (subjects: Subject[], trigger: { type: 'quiz' | 'questions' | 'english_unit', data?: any }) => {
+    if (!userId) return;
     const locked = achievements.filter(a => !a.unlocked);
     if (locked.length === 0) return;
-
     const totalQuestions = subjects.reduce((sum, s) => sum + s.correct + s.incorrect, 0);
     let newAchievementsUnlocked = false;
-
     const updatedAchievements = achievements.map(ach => {
       if (ach.unlocked) return ach;
       let conditionMet = false;
-
       switch (ach.category) {
         case 'questions': if (ach.requiredQuestions && totalQuestions >= ach.requiredQuestions) conditionMet = true; break;
         case 'streak': if (ach.requiredQuestions && streak >= ach.requiredQuestions) conditionMet = true; break;
@@ -161,11 +162,9 @@ export const useCoreData = (
         if (ach.id === 'early-bird' && now.getHours() >= 5 && now.getHours() < 7) conditionMet = true;
       }
       if (trigger.type === 'english_unit') { if (ach.id === 'english-unit-unlocked') conditionMet = true; }
-      
       if (conditionMet) {
         newAchievementsUnlocked = true;
         toast.info(`Başarım Kazanıldı: ${ach.title}`);
-        
         const avatarToUnlock = allAvatars.find(avatar => avatar.achievementId === ach.id);
         if (avatarToUnlock) {
           setUserAvatars(currentAvatars => {
@@ -180,7 +179,6 @@ export const useCoreData = (
       }
       return ach;
     });
-
     if (newAchievementsUnlocked) {
       setAchievements(updatedAchievements);
     }
@@ -196,6 +194,6 @@ export const useCoreData = (
     handleBuyAvatar,
     handleSetAvatar,
     checkAchievements,
-    isCloudDataLoaded, // DÜZELTME: Bu satırın eklendiğinden emin oluyoruz.
+    isCloudDataLoaded,
   };
 };

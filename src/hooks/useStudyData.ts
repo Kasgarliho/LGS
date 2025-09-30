@@ -23,35 +23,31 @@ export const useStudyData = (
   const [lastActiveDate, setLastActiveDate] = useState<string | null>(null);
 
   useEffect(() => {
-    const todayStr = new Date().toLocaleDateString();
-    const storedLastActiveDate = storage.loadLastActiveDate();
-    setDailySolvedSubjects(storage.loadDailySolvedSubjects(todayStr));
-    setLastActiveDate(storedLastActiveDate);
+    if (userId) {
+      const todayStr = new Date().toLocaleDateString();
+      const storedLastActiveDate = storage.loadLastActiveDate(userId);
+      setDailySolvedSubjects(storage.loadDailySolvedSubjects(userId, todayStr));
+      setLastActiveDate(storedLastActiveDate);
 
-    if (storedLastActiveDate && storedLastActiveDate !== todayStr) {
-      storage.clearDailySolvedSubjects();
-      setDailySolvedSubjects([]);
+      if (storedLastActiveDate && storedLastActiveDate !== todayStr) {
+        storage.clearDailySolvedSubjects(userId);
+        setDailySolvedSubjects([]);
+      }
     }
+  }, [userId]);
 
+  useEffect(() => {
     if (userId) {
       const fetchStudyData = async () => {
-        // =================================================================
-        // DÜZELTME: Artık tüm kayıtları çekmek yerine RPC fonksiyonunu çağırıyoruz.
-        // =================================================================
-        const { data: statsData, error } = await supabase.rpc('get_user_stats', {
-          p_user_id: userId
-        });
-
+        const { data: statsData, error } = await supabase.rpc('get_user_stats', { p_user_id: userId });
         if (error) {
           console.error("Özet istatistik verileri çekilemedi:", error);
-          // Hata durumunda eski yöntemle lokalden yükle
-          setSubjects(storage.loadSubjects().length > 0 ? storage.loadSubjects() : initialSubjects);
-          setSessions(storage.loadSessions());
+          const loadedSubjects = storage.loadSubjects(userId);
+          setSubjects(loadedSubjects.length > 0 ? loadedSubjects : initialSubjects);
+          setSessions(storage.loadSessions(userId));
         } else if (statsData) {
-          // Gelen özet veriyi işleyerek state'leri güncelliyoruz.
           const syncedSubjects = JSON.parse(JSON.stringify(initialSubjects));
           const summarySessions: StudySession[] = [];
-          
           statsData.forEach(stat => {
             const subject = syncedSubjects.find((s: Subject) => s.id === stat.ders_id);
             if (subject) {
@@ -61,7 +57,6 @@ export const useStudyData = (
                 subject.topics.push(stat.konu);
               }
             }
-            // İstatistik sayfasının çalışmaya devam etmesi için özet session'lar oluşturuyoruz
             summarySessions.push({
               id: `summary-${stat.ders_id}-${stat.konu}`,
               subjectId: stat.ders_id,
@@ -79,19 +74,21 @@ export const useStudyData = (
       };
       fetchStudyData();
     } else {
-        setSubjects(storage.loadSubjects().length > 0 ? storage.loadSubjects() : initialSubjects);
-        setSessions(storage.loadSessions());
+        setSubjects(initialSubjects);
+        setSessions([]);
+        setDailySolvedSubjects([]);
+        setLastActiveDate(null);
     }
   }, [userId]);
 
-  useEffect(() => { if (isInitialized) storage.saveSubjects(subjects); }, [subjects, isInitialized]);
-  useEffect(() => { if (isInitialized) storage.saveSessions(sessions); }, [sessions, isInitialized]);
-  useEffect(() => { if (isInitialized && lastActiveDate) storage.saveLastActiveDate(lastActiveDate); }, [lastActiveDate, isInitialized]);
-  useEffect(() => { storage.saveDailySolvedSubjects(dailySolvedSubjects); }, [dailySolvedSubjects]);
+  useEffect(() => { if (isInitialized && userId) storage.saveSubjects(userId, subjects); }, [subjects, isInitialized, userId]);
+  useEffect(() => { if (isInitialized && userId) storage.saveSessions(userId, sessions); }, [sessions, isInitialized, userId]);
+  useEffect(() => { if (isInitialized && userId && lastActiveDate) storage.saveLastActiveDate(userId, lastActiveDate); }, [lastActiveDate, isInitialized, userId]);
+  useEffect(() => { if (userId) storage.saveDailySolvedSubjects(userId, dailySolvedSubjects); }, [dailySolvedSubjects, userId]);
 
   const handleAddQuestions = async (subjectId: string, counts: { correct: number, incorrect: number }, topic: string) => {
+    if (!userId) return;
     const { correct, incorrect } = counts;
-    // Yeni eklenen soruları anında görebilmek için lokal state'i hemen güncelliyoruz
     const newSession: StudySession = {
       id: Date.now().toString(), subjectId, correctCount: correct, incorrectCount: incorrect,
       questionsCompleted: correct + incorrect, topic, date: new Date(), duration: 0,
@@ -101,22 +98,17 @@ export const useStudyData = (
     toast.success(`${correct + incorrect} soru eklendi! ✨`);
     playSuccessSound(isMuted);
 
-    if (userId) {
-      await supabase.from('cozulen_sorular').insert({ kullanici_id: userId, ders_id: subjectId, dogru_sayisi: correct, yanlis_sayisi: incorrect, konu: topic });
-    }
+    await supabase.from('cozulen_sorular').insert({ kullanici_id: userId, ders_id: subjectId, dogru_sayisi: correct, yanlis_sayisi: incorrect, konu: topic });
   };
 
-  const handleQuizCompletion = async (correctlySolved: SolvedStat[], subjectId: string) => {
+  const handleQuizCompletion = async (solvedStats: SolvedStat[], subjectId: string) => {
+    if (!userId) return;
     const todayStr = new Date().toLocaleDateString();
     if (dailySolvedSubjects.includes(subjectId)) return;
-
     const newDailySolved = [...dailySolvedSubjects, subjectId];
     setDailySolvedSubjects(newDailySolved);
-
-    const correctCount = correctlySolved.length;
+    const correctCount = solvedStats.filter(s => s.correct).length;
     const incorrectCount = 6 - correctCount;
-
-    // Lokal state'i anında güncelle
     setSubjects(prev => prev.map(s => s.id === subjectId ? { ...s, correct: s.correct + correctCount, incorrect: s.incorrect + incorrectCount } : s));
     const newSession: StudySession = {
       id: Date.now().toString(), subjectId, correctCount, incorrectCount, questionsCompleted: 6,
@@ -124,12 +116,8 @@ export const useStudyData = (
     };
     setSessions(prev => [...prev, newSession]);
     setLastActiveDate(todayStr);
-
     onQuizCompleted({ correct: correctCount, incorrect: incorrectCount }, newDailySolved.length);
-
-    if (userId) {
-      await supabase.from('cozulen_sorular').insert({ kullanici_id: userId, ders_id: subjectId, dogru_sayisi: correctCount, yanlis_sayisi: incorrectCount, konu: "Günlük Test" });
-    }
+    await supabase.from('cozulen_sorular').insert({ kullanici_id: userId, ders_id: subjectId, dogru_sayisi: correctCount, yanlis_sayisi: incorrectCount, konu: "Günlük Test" });
   };
 
   return {

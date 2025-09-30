@@ -17,7 +17,7 @@ export interface Subject {
 export interface StudySession {
   id: string;
   subjectId: string;
-  duration: number; // in minutes
+  duration: number;
   questionsCompleted: number;
   correctCount: number;
   incorrectCount: number;
@@ -110,10 +110,18 @@ export interface NotificationSettings {
   };
 }
 
+export interface KnownUser {
+  userId: string;
+  userName: string;
+}
+
 export type AppContextType = {
   // useAuth'dan gelenler
+  userId: string | null;
   userName: string | null;
   showNameModal: boolean;
+  setShowNameModal: React.Dispatch<React.SetStateAction<boolean>>;
+  showProfileSelector: boolean;
   tempName: string;
   setTempName: (value: string) => void;
   className: string;
@@ -121,6 +129,10 @@ export type AppContextType = {
   coachCode: string;
   setCoachCode: (value: string) => void;
   handleRegistration: () => Promise<void>;
+  handleLogout: () => void;
+  knownUsers: KnownUser[];
+  handleSwitchUser: (userId: string) => void;
+  showRegistration: () => void;
 
   // useStudyData'dan gelenler
   subjects: Subject[];
@@ -129,7 +141,7 @@ export type AppContextType = {
   lastActiveDate: string | null;
   setLastActiveDate: React.Dispatch<React.SetStateAction<string | null>>;
   handleAddQuestions: (subjectId: string, counts: { correct: number; incorrect: number; }, topic: string) => Promise<void>;
-  handleQuizCompletion: (correctlySolved: SolvedStat[], subjectId: string) => Promise<void>;
+  handleQuizCompletion: (solvedStats: SolvedStat[], subjectId: string) => Promise<void>;
 
   // useCoreData'dan gelenler
   totalPoints: number;
@@ -137,12 +149,14 @@ export type AppContextType = {
   streak: number;
   setStreak: React.Dispatch<React.SetStateAction<number>>;
   streakFreezes: number;
+  setStreakFreezes: React.Dispatch<React.SetStateAction<number>>;
   achievements: Achievement[];
   userAvatars: UserAvatars;
   handleBuyStreakFreeze: () => void;
   handleBuyAvatar: (avatarId: string) => void;
   handleSetAvatar: (avatarId: string) => void;
   checkAchievements: (subjects: Subject[], trigger: { type: 'quiz' | 'questions' | 'english_unit', data?: any }) => void;
+  isCloudDataLoaded: boolean;
 
   // useScheduler'dan gelenler
   notificationSettings: NotificationSettings;
@@ -152,9 +166,6 @@ export type AppContextType = {
   handleUpdateManualSchedule: (schedule: ManualSchedule) => void;
   handleAddPlanEntry: (newPlanData: Omit<StudyPlanEntry, 'id' | 'notificationId'>) => Promise<void>;
   handleRemovePlanEntry: (planId: string) => Promise<void>;
-  // =================================================================
-  // YENİ EKLENEN TİPLER
-  // =================================================================
   tomorrowSubjects: string[];
   isEvening: boolean;
 

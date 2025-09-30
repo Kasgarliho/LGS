@@ -1,22 +1,39 @@
 import { useState, useEffect } from 'react';
-import { storage } from '@/utils/storage';
+import { storage, KnownUser } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
 import { playIntroSound } from '@/utils/sounds';
 
 export const useAuth = (isMuted: boolean) => {
-  const [userId, setUserId] = useState<string | null>(() => localStorage.getItem('lgs_app_user_id'));
-  const [userName, setUserName] = useState<string | null>(() => storage.loadUserName());
+  const [userId, setUserId] = useState<string | null>(() => storage.loadCurrentUserId());
+  const [userName, setUserName] = useState<string | null>(null);
+  const [knownUsers, setKnownUsers] = useState<KnownUser[]>(() => storage.loadKnownUsers());
   const [showNameModal, setShowNameModal] = useState(false);
+  const [showProfileSelector, setShowProfileSelector] = useState(false);
+  
   const [tempName, setTempName] = useState("");
   const [className, setClassName] = useState("");
   const [coachCode, setCoachCode] = useState("");
 
   useEffect(() => {
-    if (!userId || !userName) {
-      setShowNameModal(true);
+    const known = storage.loadKnownUsers();
+    setKnownUsers(known);
+
+    if (!userId) {
+      if (known.length > 0) {
+        setShowProfileSelector(true);
+        setShowNameModal(false);
+      } else {
+        setShowProfileSelector(false);
+        setShowNameModal(true);
+      }
+    } else {
+      const loadedUserName = storage.loadUserName(userId);
+      setUserName(loadedUserName);
+      setShowNameModal(false);
+      setShowProfileSelector(false);
     }
-  }, [userId, userName]);
+  }, [userId]);
 
   const handleRegistration = async () => {
     const finalName = tempName.trim().toUpperCase();
@@ -28,71 +45,51 @@ export const useAuth = (isMuted: boolean) => {
         return;
     }
     try {
-        const { data: coachData, error: coachError } = await supabase
-            .from('koclar')
-            .select('eposta')
-            .ilike('koc_kodu', finalCoachCode)
-            .single();
-
+        const { data: coachData, error: coachError } = await supabase.from('koclar').select('eposta').ilike('koc_kodu', finalCoachCode).single();
         if (coachError || !coachData) {
             toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
             return;
         }
-
         const finalCoachEmail = coachData.eposta;
 
-        const { data: studentData, error: studentError } = await supabase
-            .from('ogrenciler')
-            .select('*')
-            .ilike('ad_soyad', finalName)
-            .ilike('sinif', finalClassName)
-            .ilike('koc_eposta', finalCoachEmail)
-            .single();
-
+        const { data: studentData, error: studentError } = await supabase.from('ogrenciler').select('*').ilike('ad_soyad', finalName).ilike('sinif', finalClassName).ilike('koc_eposta', finalCoachEmail).single();
         if (studentError || !studentData) {
             toast.error("Bilgiler eşleşmedi. Ad, sınıf ve koç kodunu kontrol et.");
             return;
         }
 
         let newUserId;
-
-        const { data: existingUserData } = await supabase
-            .from('kullanicilar')
-            .select('id')
-            .ilike('ad_soyad', finalName)
-            .ilike('koc_eposta', finalCoachEmail)
-            .maybeSingle();
+        const { data: existingUserData } = await supabase.from('kullanicilar').select('id').ilike('ad_soyad', finalName).ilike('koc_eposta', finalCoachEmail).maybeSingle();
 
         if (existingUserData) {
             newUserId = existingUserData.id;
         } else {
-            const { data: newUserData, error: newUserError } = await supabase
-                .from('kullanicilar')
-                .insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail })
-                .select('id')
-                .single();
-
+            const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail }).select('id').single();
             if (newUserError || !newUserData) {
                 toast.error("Kullanıcı kimliği oluşturulurken bir hata oluştu.");
                 throw newUserError || new Error("Yeni kullanıcı ID'si alınamadı.");
             }
             newUserId = newUserData.id;
         }
+        
+        await supabase.from('ogrenciler').update({ baglanan_kullanici_id: newUserId }).eq('id', studentData.id);
 
-        await supabase
-            .from('ogrenciler')
-            .update({ baglanan_kullanici_id: newUserId })
-            .eq('id', studentData.id);
+        storage.saveCurrentUserId(newUserId);
+        storage.saveUserName(newUserId, studentData.ad_soyad);
 
-        localStorage.setItem('lgs_app_user_id', newUserId);
-        storage.saveUserName(studentData.ad_soyad);
-        setUserId(newUserId); // State'i güncelle
-        setUserName(studentData.ad_soyad); // State'i güncelle
-        setShowNameModal(false);
+        const currentKnownUsers = storage.loadKnownUsers();
+        const isAlreadyKnown = currentKnownUsers.some(u => u.userId === newUserId);
+        if (!isAlreadyKnown) {
+          const updatedKnownUsers = [...currentKnownUsers, { userId: newUserId, userName: studentData.ad_soyad }];
+          storage.saveKnownUsers(updatedKnownUsers);
+          setKnownUsers(updatedKnownUsers);
+        }
+        
+        setUserId(newUserId);
         toast.success(`Hoş geldin, ${studentData.ad_soyad}! Giriş başarılı.`);
         playIntroSound(isMuted);
-
-        // SAYFA YENİLEME SATIRI KALDIRILDI!
+        
+        window.location.reload();
 
     } catch (error) {
         console.error("Kayıt sırasında beklenmedik hata:", error);
@@ -100,16 +97,37 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
+  const handleLogout = () => {
+    storage.clearCurrentUserId();
+    window.location.reload();
+  };
+
+  const handleSwitchUser = (newUserId: string) => {
+    storage.saveCurrentUserId(newUserId);
+    window.location.reload();
+  };
+
+  const showRegistration = () => {
+    setShowProfileSelector(false);
+    setShowNameModal(true);
+  }
+
   return {
     userId,
     userName,
+    knownUsers,
     showNameModal,
+    setShowNameModal,
+    showProfileSelector,
     tempName,
     setTempName,
     className,
     setClassName,
     coachCode,
     setCoachCode,
-    handleRegistration
+    handleRegistration,
+    handleLogout,
+    handleSwitchUser,
+    showRegistration,
   };
 };

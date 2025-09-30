@@ -1,115 +1,135 @@
-// src/utils/storage.ts
+import { Subject, StudySession, Achievement, ManualSchedule, UserAvatars, LearnedWords, CustomStudyPlan, NotificationSettings } from '@/types';
 
-import { Subject, StudySession, Achievement, ManualSchedule, UserAvatars, LearnedWords, CustomStudyPlan } from '@/types';
-import { supabase } from '@/supabaseClient';
+const BASE_KEYS = {
+  THEME: 'theme',
+  SUBJECTS: 'subjects',
+  SESSIONS: 'sessions',
+  ACHIEVEMENTS: 'achievements',
+  STREAK: 'streak',
+  USERNAME: 'username',
+  POINTS: 'points',
+  LEARNED_WORDS: 'learned_words',
+  STREAK_FREEZES: 'streak_freezes',
+  LAST_ACTIVE_DATE: 'last_active_date',
+  USER_AVATARS: 'user_avatars',
+  IS_MUTED: 'is_muted',
+  MANUAL_SCHEDULE: 'manual_schedule',
+  CUSTOM_STUDY_PLAN: 'custom_study_plan',
+  DAILY_SOLVED_SUBJECTS: 'daily_solved_subjects',
+  NOTIFICATION_SETTINGS: 'notification_settings',
+};
 
-const THEME_KEY = 'lgs_app_theme';
-const SUBJECTS_KEY = 'lgs_app_subjects';
-const SESSIONS_KEY = 'lgs_app_sessions';
-const ACHIEVEMENTS_KEY = 'lgs_app_achievements';
-const STREAK_KEY = 'lgs_app_streak';
-const USERNAME_KEY = 'lgs_app_username';
-const POINTS_KEY = 'lgs_app_points';
-const LEARNED_WORDS_KEY = 'lgs_app_learned_words';
-const STREAK_FREEZES_KEY = 'lgs_app_streak_freezes';
-const LAST_ACTIVE_DATE_KEY = 'lgs_app_last_active_date';
-const USER_AVATARS_KEY = 'lgs_app_user_avatars';
-const IS_MUTED_KEY = 'lgs_app_is_muted';
-const MANUAL_SCHEDULE_KEY = 'lgs_app_manual_schedule';
-const CUSTOM_STUDY_PLAN_KEY = 'lgs_app_custom_study_plan';
-const DAILY_SOLVED_SUBJECTS_KEY = 'lgs_app_daily_solved_subjects';
-const USER_ID_KEY = 'lgs_app_user_id';
-const NOTIFICATION_SETTINGS_KEY = 'lgs_app_notification_settings';
+const CURRENT_USER_ID_KEY = 'lgs_app_current_user_id';
+const KNOWN_USERS_KEY = 'lgs_app_known_users';
 
-export interface NotificationSettings {
-  studyPlanReminder: {
-    enabled: boolean;
-    minutesBefore: number;
-  };
-  bagReminder: {
-    enabled: boolean;
-    hour: number;
-    minute: number;
-  };
-  streakReminder: boolean;
+const createKey = (userId: string, baseKey: string) => `lgs_app_${userId}_${baseKey}`;
+const createGlobalKey = (baseKey: string) => `lgs_app_${baseKey}`;
+
+export interface KnownUser {
+  userId: string;
+  userName: string;
 }
 
 export const storage = {
-  getUserId: async (userName: string, coachEmail: string): Promise<string> => {
-    let userId = localStorage.getItem(USER_ID_KEY);
-    if (userId) return userId;
-    const { data, error } = await supabase
-      .from('kullanicilar')
-      .insert([{ ad_soyad: userName, koc_eposta: coachEmail }])
-      .select('id')
-      .single();
-    if (error) {
-      console.error('Supabase kullanıcı oluşturma hatası:', error);
-      throw error;
-    }
-    if (data && data.id) {
-      userId = data.id;
-      localStorage.setItem(USER_ID_KEY, userId);
-      return userId;
-    }
-    throw new Error('Yeni kullanıcı ID\'si alınamadı.');
-  },
+  saveCurrentUserId: (userId: string) => localStorage.setItem(CURRENT_USER_ID_KEY, userId),
+  loadCurrentUserId: (): string | null => localStorage.getItem(CURRENT_USER_ID_KEY),
+  clearCurrentUserId: () => localStorage.removeItem(CURRENT_USER_ID_KEY),
 
-  loadTheme: (): 'light' | 'dark' => (localStorage.getItem(THEME_KEY) as 'light' | 'dark') || 'dark',
-  saveTheme: (theme: 'light' | 'dark') => localStorage.setItem(THEME_KEY, theme),
-
-  loadSubjects: (): Subject[] => {
-    const data = localStorage.getItem(SUBJECTS_KEY);
+  loadKnownUsers: (): KnownUser[] => {
+    const data = localStorage.getItem(KNOWN_USERS_KEY);
     return data ? JSON.parse(data) : [];
   },
-  saveSubjects: (subjects: Subject[]) => localStorage.setItem(SUBJECTS_KEY, JSON.stringify(subjects)),
+  saveKnownUsers: (users: KnownUser[]) => {
+    localStorage.setItem(KNOWN_USERS_KEY, JSON.stringify(users));
+  },
 
-  loadSessions: (): StudySession[] => {
-    const data = localStorage.getItem(SESSIONS_KEY);
+  loadTheme: (userId: string): 'light' | 'dark' => (localStorage.getItem(createKey(userId, BASE_KEYS.THEME)) as 'light' | 'dark') || 'dark',
+  saveTheme: (userId: string, theme: 'light' | 'dark') => localStorage.setItem(createKey(userId, BASE_KEYS.THEME), theme),
+
+  loadSubjects: (userId: string): Subject[] => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.SUBJECTS));
+    return data ? JSON.parse(data) : [];
+  },
+  saveSubjects: (userId: string, subjects: Subject[]) => localStorage.setItem(createKey(userId, BASE_KEYS.SUBJECTS), JSON.stringify(subjects)),
+
+  loadSessions: (userId: string): StudySession[] => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.SESSIONS));
     if (!data) return [];
     return JSON.parse(data).map((s: any) => ({ ...s, date: new Date(s.date) }));
   },
-  saveSessions: (sessions: StudySession[]) => localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)),
+  saveSessions: (userId: string, sessions: StudySession[]) => localStorage.setItem(createKey(userId, BASE_KEYS.SESSIONS), JSON.stringify(sessions)),
 
-  loadAchievements: (): Achievement[] => {
-    const data = localStorage.getItem(ACHIEVEMENTS_KEY);
+  loadAchievements: (userId: string): Achievement[] => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.ACHIEVEMENTS));
     if (!data) return [];
     return JSON.parse(data).map((a: any) => ({ ...a, unlockedAt: a.unlockedAt ? new Date(a.unlockedAt) : undefined }));
   },
-  saveAchievements: (achievements: Achievement[]) => localStorage.setItem(ACHIEVEMENTS_KEY, JSON.stringify(achievements)),
+  saveAchievements: (userId: string, achievements: Achievement[]) => localStorage.setItem(createKey(userId, BASE_KEYS.ACHIEVEMENTS), JSON.stringify(achievements)),
 
-  loadStreak: (): number => parseInt(localStorage.getItem(STREAK_KEY) || '0', 10),
-  saveStreak: (streak: number) => localStorage.setItem(STREAK_KEY, streak.toString()),
+  loadStreak: (userId: string): number => parseInt(localStorage.getItem(createKey(userId, BASE_KEYS.STREAK)) || '0', 10),
+  saveStreak: (userId: string, streak: number) => localStorage.setItem(createKey(userId, BASE_KEYS.STREAK), streak.toString()),
 
-  loadUserName: (): string | null => localStorage.getItem(USERNAME_KEY),
-  saveUserName: (name: string) => localStorage.setItem(USERNAME_KEY, name),
+  loadUserName: (userId: string): string | null => localStorage.getItem(createKey(userId, BASE_KEYS.USERNAME)),
+  saveUserName: (userId: string, name: string) => localStorage.setItem(createKey(userId, BASE_KEYS.USERNAME), name),
+  
+  loadPoints: (userId: string): number => parseInt(localStorage.getItem(createKey(userId, BASE_KEYS.POINTS)) || '0', 10),
+  savePoints: (userId: string, points: number) => localStorage.setItem(createKey(userId, BASE_KEYS.POINTS), points.toString()),
 
-  loadPoints: (): number => parseInt(localStorage.getItem(POINTS_KEY) || '0', 10),
-  savePoints: (points: number) => localStorage.setItem(POINTS_KEY, points.toString()),
-
-  loadLearnedWords: (): LearnedWords => {
-    const data = localStorage.getItem(LEARNED_WORDS_KEY);
+  loadLearnedWords: (userId: string): LearnedWords => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.LEARNED_WORDS));
     return data ? JSON.parse(data) : { known: [], unknown: [] };
   },
-  saveLearnedWords: (words: LearnedWords) => localStorage.setItem(LEARNED_WORDS_KEY, JSON.stringify(words)),
+  saveLearnedWords: (userId: string, words: LearnedWords) => localStorage.setItem(createKey(userId, BASE_KEYS.LEARNED_WORDS), JSON.stringify(words)),
 
-  loadStreakFreezes: (): number => parseInt(localStorage.getItem(STREAK_FREEZES_KEY) || '0', 10),
-  saveStreakFreezes: (freezes: number) => localStorage.setItem(STREAK_FREEZES_KEY, freezes.toString()),
+  loadStreakFreezes: (userId: string): number => parseInt(localStorage.getItem(createKey(userId, BASE_KEYS.STREAK_FREEZES)) || '0', 10),
+  saveStreakFreezes: (userId: string, freezes: number) => localStorage.setItem(createKey(userId, BASE_KEYS.STREAK_FREEZES), freezes.toString()),
 
-  loadLastActiveDate: (): string | null => localStorage.getItem(LAST_ACTIVE_DATE_KEY),
-  saveLastActiveDate: (date: string) => localStorage.setItem(LAST_ACTIVE_DATE_KEY, date),
+  loadLastActiveDate: (userId: string): string | null => localStorage.getItem(createKey(userId, BASE_KEYS.LAST_ACTIVE_DATE)),
+  saveLastActiveDate: (userId: string, date: string) => localStorage.setItem(createKey(userId, BASE_KEYS.LAST_ACTIVE_DATE), date),
 
-  loadUserAvatars: (): UserAvatars => {
-    const data = localStorage.getItem(USER_AVATARS_KEY);
+  loadUserAvatars: (userId: string): UserAvatars => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.USER_AVATARS));
     return data ? JSON.parse(data) : { current: 'default', unlocked: ['default'] };
   },
-  saveUserAvatars: (avatars: UserAvatars) => localStorage.setItem(USER_AVATARS_KEY, JSON.stringify(avatars)),
+  saveUserAvatars: (userId: string, avatars: UserAvatars) => localStorage.setItem(createKey(userId, BASE_KEYS.USER_AVATARS), JSON.stringify(avatars)),
+  
+  loadDailySolvedSubjects: (userId: string, todayStr: string): string[] => {
+    const storedData = localStorage.getItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS));
+    if (storedData) {
+      const data = JSON.parse(storedData);
+      if (data.date === todayStr) return data.subjects;
+    }
+    return [];
+  },
+  saveDailySolvedSubjects: (userId: string, subjects: string[]) => {
+    const today = new Date().toLocaleDateString();
+    localStorage.setItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS), JSON.stringify({ date: today, subjects }));
+  },
+  clearDailySolvedSubjects: (userId: string) => localStorage.removeItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS)),
 
-  loadIsMuted: (): boolean => JSON.parse(localStorage.getItem(IS_MUTED_KEY) || 'false'),
-  saveIsMuted: (isMuted: boolean) => localStorage.setItem(IS_MUTED_KEY, JSON.stringify(isMuted)),
-
+  loadIsMuted: (): boolean => JSON.parse(localStorage.getItem(createGlobalKey(BASE_KEYS.IS_MUTED)) || 'false'),
+  saveIsMuted: (isMuted: boolean) => localStorage.setItem(createGlobalKey(BASE_KEYS.IS_MUTED), JSON.stringify(isMuted)),
+  
+  loadManualSchedule: (): ManualSchedule | null => {
+    const data = localStorage.getItem(createGlobalKey(BASE_KEYS.MANUAL_SCHEDULE));
+    return data ? JSON.parse(data) : null;
+  },
+  saveManualSchedule: (schedule: ManualSchedule) => localStorage.setItem(createGlobalKey(BASE_KEYS.MANUAL_SCHEDULE), JSON.stringify(schedule)),
+  
+  loadCustomStudyPlan: (): CustomStudyPlan | null => {
+    const data = localStorage.getItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN));
+    return data ? JSON.parse(data) : null;
+  },
+  saveCustomStudyPlan: (plan: CustomStudyPlan | null) => {
+    if (plan) {
+      localStorage.setItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN), JSON.stringify(plan));
+    } else {
+      localStorage.removeItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN));
+    }
+  },
+  
   loadNotificationSettings: (): NotificationSettings => {
-    const data = localStorage.getItem(NOTIFICATION_SETTINGS_KEY);
+    const data = localStorage.getItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS));
     const defaults: NotificationSettings = {
       studyPlanReminder: { enabled: true, minutesBefore: 15 },
       bagReminder: { enabled: true, hour: 20, minute: 0 },
@@ -126,33 +146,5 @@ export const storage = {
     }
     return defaults;
   },
-  saveNotificationSettings: (settings: NotificationSettings) => localStorage.setItem(NOTIFICATION_SETTINGS_KEY, JSON.stringify(settings)),
-
-  saveDailySolvedSubjects: (subjects: string[]) => {
-    const today = new Date().toLocaleDateString();
-    localStorage.setItem(DAILY_SOLVED_SUBJECTS_KEY, JSON.stringify({ date: today, subjects }));
-  },
-  loadDailySolvedSubjects: (todayStr: string): string[] => {
-    const storedData = localStorage.getItem(DAILY_SOLVED_SUBJECTS_KEY);
-    if (storedData) {
-      const data = JSON.parse(storedData);
-      if (data.date === todayStr) return data.subjects;
-    }
-    return [];
-  },
-  clearDailySolvedSubjects: () => localStorage.removeItem(DAILY_SOLVED_SUBJECTS_KEY),
-
-  loadManualSchedule: (): ManualSchedule | null => {
-    const data = localStorage.getItem(MANUAL_SCHEDULE_KEY);
-    return data ? JSON.parse(data) : null;
-  },
-  saveManualSchedule: (schedule: ManualSchedule) => localStorage.setItem(MANUAL_SCHEDULE_KEY, JSON.stringify(schedule)),
-  removeManualSchedule: () => localStorage.removeItem(MANUAL_SCHEDULE_KEY),
-
-  loadCustomStudyPlan: (): CustomStudyPlan | null => {
-    const data = localStorage.getItem(CUSTOM_STUDY_PLAN_KEY);
-    return data ? JSON.parse(data) : null;
-  },
-  saveCustomStudyPlan: (plan: CustomStudyPlan) => localStorage.setItem(CUSTOM_STUDY_PLAN_KEY, JSON.stringify(plan)),
-  removeCustomStudyPlan: () => localStorage.removeItem(CUSTOM_STUDY_PLAN_KEY),
+  saveNotificationSettings: (settings: NotificationSettings) => localStorage.setItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS), JSON.stringify(settings)),
 };
