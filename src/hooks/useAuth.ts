@@ -7,9 +7,11 @@ import { playIntroSound } from '@/utils/sounds';
 export const useAuth = (isMuted: boolean) => {
   const [userId, setUserId] = useState<string | null>(() => storage.loadCurrentUserId());
   const [userName, setUserName] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const [knownUsers, setKnownUsers] = useState<KnownUser[]>(() => storage.loadKnownUsers());
   const [showNameModal, setShowNameModal] = useState(false);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   
   const [tempName, setTempName] = useState("");
   const [className, setClassName] = useState("");
@@ -18,6 +20,7 @@ export const useAuth = (isMuted: boolean) => {
   useEffect(() => {
     const known = storage.loadKnownUsers();
     setKnownUsers(known);
+    setAuthLoading(true);
 
     if (!userId) {
       if (known.length > 0) {
@@ -27,11 +30,30 @@ export const useAuth = (isMuted: boolean) => {
         setShowProfileSelector(false);
         setShowNameModal(true);
       }
+      setAuthLoading(false);
     } else {
-      const loadedUserName = storage.loadUserName(userId);
-      setUserName(loadedUserName);
-      setShowNameModal(false);
-      setShowProfileSelector(false);
+      const fetchUserData = async () => {
+        console.log(`[useAuth] useEffect: Kullanıcı ID'si bulundu (${userId}). Veri çekiliyor...`);
+        const { data, error } = await supabase
+          .from('kullanicilar')
+          .select('ad_soyad, rol')
+          .eq('id', userId)
+          .single();
+
+        if (data) {
+          console.log(`[useAuth] useEffect: Veri başarıyla çekildi. Rol: ${data.rol}`);
+          setUserName(data.ad_soyad);
+          setUserRole(data.rol);
+        } else {
+          console.error("[useAuth] useEffect: Kullanıcı verisi çekilemedi, oturum sonlandırılıyor:", error);
+          storage.clearCurrentUserId();
+          setUserId(null);
+        }
+        setShowNameModal(false);
+        setShowProfileSelector(false);
+        setAuthLoading(false);
+      };
+      fetchUserData();
     }
   }, [userId]);
 
@@ -64,7 +86,7 @@ export const useAuth = (isMuted: boolean) => {
         if (existingUserData) {
             newUserId = existingUserData.id;
         } else {
-            const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail }).select('id').single();
+            const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail, rol: 'ogrenci' }).select('id').single();
             if (newUserError || !newUserData) {
                 toast.error("Kullanıcı kimliği oluşturulurken bir hata oluştu.");
                 throw newUserError || new Error("Yeni kullanıcı ID'si alınamadı.");
@@ -82,7 +104,6 @@ export const useAuth = (isMuted: boolean) => {
         if (!isAlreadyKnown) {
           const updatedKnownUsers = [...currentKnownUsers, { userId: newUserId, userName: studentData.ad_soyad }];
           storage.saveKnownUsers(updatedKnownUsers);
-          setKnownUsers(updatedKnownUsers);
         }
         
         setUserId(newUserId);
@@ -110,11 +131,13 @@ export const useAuth = (isMuted: boolean) => {
   const showRegistration = () => {
     setShowProfileSelector(false);
     setShowNameModal(true);
-  }
+  };
 
   return {
     userId,
     userName,
+    userRole,
+    authLoading,
     knownUsers,
     showNameModal,
     setShowNameModal,

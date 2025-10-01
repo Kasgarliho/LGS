@@ -119,6 +119,7 @@ export type AppContextType = {
   // useAuth'dan gelenler
   userId: string | null;
   userName: string | null;
+  userRole: string | null;
   showNameModal: boolean;
   setShowNameModal: React.Dispatch<React.SetStateAction<boolean>>;
   showProfileSelector: boolean;

@@ -9,9 +9,6 @@ import { App } from '@capacitor/app';
 
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/useAuth';
 import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
@@ -27,7 +24,7 @@ export default function AppLayout() {
   const isHomePage = location.pathname === '/';
 
   const auth = useAuth(isMuted);
-  const { userId, userName, handleLogout, handleSwitchUser, knownUsers } = auth;
+  const { userId, userName, handleLogout, handleSwitchUser, knownUsers, userRole, authLoading } = auth;
 
   const coreData = useCoreData(userId, isInitialized, isMuted);
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
@@ -155,54 +152,12 @@ export default function AppLayout() {
     handleEnglishUnitUnlocked,
     isMuted,
     toggleMute,
-    handleLogout,
-    handleSwitchUser,
-    knownUsers,
   };
-  
-  const renderLoginUI = () => (
-    <Dialog open={auth.showNameModal || auth.showProfileSelector}>
-      <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-        {auth.showNameModal ? (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle>
-              <DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-              <Input placeholder="Adın Soyadın..." value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
-              <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
-              <Input placeholder="Koç Kodu (Coşkun Hoca)" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
-              <Button onClick={auth.handleRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
-              {knownUsers.length > 0 && (
-                <Button variant="ghost" className="w-full" onClick={() => { auth.setShowNameModal(false); }}>Geri</Button>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-2xl">Profil Seç</DialogTitle>
-              <DialogDescription>Devam etmek için bir profil seç veya yeni bir hesapla giriş yap.</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-2">
-              {knownUsers.map(user => (
-                <Button key={user.userId} variant="outline" className="w-full justify-start" onClick={() => handleSwitchUser(user.userId)}>{user.userName}</Button>
-              ))}
-              <Button className="w-full mt-4" onClick={auth.showRegistration}>Yeni Hesapla Giriş Yap</Button>
-            </div>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
 
   return (
     <>
-      {!userId && renderLoginUI()}
-      
       {theme && (
-        <div className={`max-w-7xl mx-auto p-4 pb-24 ${!userId ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`max-w-7xl mx-auto p-4 pb-24`}>
           <Header
             userName={userName}
             totalQuestions={totalQuestions}
@@ -214,7 +169,7 @@ export default function AppLayout() {
             currentAvatarId={coreData.userAvatars.current}
             isMuted={isMuted}
             toggleMute={toggleMute}
-            isHomePage={isHomePage} // YENİ: Bu prop geri eklendi
+            isHomePage={isHomePage}
           />
           <main>
             <div className="animate-slide-up">
@@ -223,7 +178,7 @@ export default function AppLayout() {
           </main>
         </div>
       )}
-      {userId && <BottomNav isMuted={isMuted} />}
+      <BottomNav isMuted={isMuted} />
     </>
   );
 }
