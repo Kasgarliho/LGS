@@ -2,7 +2,7 @@ import { Question } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Target, CheckCircle, Hourglass, Book } from "lucide-react";
+import { Play, Target, CheckCircle, Book } from "lucide-react";
 import { Subject } from "@/types";
 
 interface DailyQuestionsProps {
@@ -41,7 +41,6 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
             <CardDescription className="mt-2">
               Bugün için toplam {dailyQuestionsCount} soru seni bekliyor.
             </CardDescription>
-            {/* DÜZELTME: Bu div, CardDescription dışına alındı */}
             <div className="mt-1 text-sm text-muted-foreground">Serini devam ettirmek için en az {totalSubjects} ders seç.</div>
             <div className="font-bold text-lg mt-2">{solvedCount}/{totalSubjects} ders tamamlandı.</div>
           </div>
@@ -54,7 +53,7 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
       
       <CardContent className="space-y-4">
         {availableSubjects.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             {availableSubjects.map(subject => (
               <Card 
                 key={subject.id} 

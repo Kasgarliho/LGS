@@ -148,3 +148,5 @@ export const storage = {
   },
   saveNotificationSettings: (settings: NotificationSettings) => localStorage.setItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS), JSON.stringify(settings)),
 };
+
+export type { NotificationSettings };

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/supabaseClient';
 import { useAppContext } from './AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { User, Flame, Clock, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { User, Flame, Clock, ChevronRight, Search, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 interface StudentSummary {
   student_user_id: string;
   student_name: string;
+  student_class: string;
   weekly_questions: number;
   current_streak: number;
   last_active_date: string | null;
@@ -20,12 +23,12 @@ const WEEKLY_GOAL = 250;
 
 export default function SchedulePage() {
   const navigate = useNavigate();
-  const context = useAppContext();
-  const [students, setStudents] = useState<StudentSummary[]>([]);
+  const { userId } = useAppContext();
+  const [allStudents, setAllStudents] = useState<StudentSummary[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedClass, setSelectedClass] = useState('all'); // YENİ: Seçili sınıfı tutan state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const userId = context?.userId;
 
   useEffect(() => {
     if (!userId) {
@@ -36,16 +39,13 @@ export default function SchedulePage() {
     const fetchStudents = async () => {
       setLoading(true);
       setError(null);
-
-      const { data, error: rpcError } = await supabase.rpc('get_coach_students_summary', {
-        p_coach_user_id: userId
-      });
+      const { data, error: rpcError } = await supabase.rpc('get_coach_students_summary', { p_coach_user_id: userId });
 
       if (rpcError) {
         console.error("Öğrenci özeti çekilirken hata:", rpcError);
         setError("Öğrenci verileri yüklenemedi.");
       } else if (data) {
-        setStudents(data);
+        setAllStudents(data);
       }
       setLoading(false);
     };
@@ -53,18 +53,30 @@ export default function SchedulePage() {
     fetchStudents();
   }, [userId]);
 
+  // YENİ: Öğrenci listesinden benzersiz sınıf adlarını al
+  const classNames = useMemo(() => {
+    const uniqueClasses = [...new Set(allStudents.map(student => student.student_class || 'Belirtilmemiş'))];
+    return ['all', ...uniqueClasses.sort()];
+  }, [allStudents]);
+
+  // DÜZELTME: Bu blok artık gruplama yerine filtreleme yapıyor
+  const filteredStudents = useMemo(() => {
+    return allStudents
+      .filter(student => 
+        selectedClass === 'all' || (student.student_class || 'Belirtilmemiş') === selectedClass
+      )
+      .filter(student =>
+        student.student_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+  }, [allStudents, searchTerm, selectedClass]);
+
   const formatLastActive = (dateString: string | null) => {
     if (!dateString) return "Hiç aktif olmadı";
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: tr });
   };
   
-  if (!context || loading) {
-    return <div className="text-center p-8">Öğrenci verileri yükleniyor...</div>;
-  }
-  
-  if (error) {
-    return <div className="text-center p-8 text-destructive">{error}</div>;
-  }
+  if (loading) { return <div className="text-center p-8">Öğrenci verileri yükleniyor...</div>; }
+  if (error) { return <div className="text-center p-8 text-destructive">{error}</div>; }
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -73,19 +85,46 @@ export default function SchedulePage() {
           <CardTitle>Koç Paneli</CardTitle>
           <CardDescription>Öğrencilerinin haftalık ilerlemesini buradan takip et.</CardDescription>
         </CardHeader>
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Öğrenci adıyla ara..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="relative flex items-center">
+             <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+             <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger className="pl-9">
+                  <SelectValue placeholder="Sınıf Seç..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {classNames.map(name => (
+                    <SelectItem key={name} value={name}>
+                      {name === 'all' ? 'Tüm Sınıflar' : name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+          </div>
+        </CardContent>
       </Card>
 
-      {students.length === 0 ? (
+      {/* DÜZELTME: Artık gruplama yok, doğrudan filtrelenmiş liste gösteriliyor */}
+      {filteredStudents.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
-          <p>Sisteme kayıtlı öğrencin bulunmuyor.</p>
+          <p>{searchTerm || selectedClass !== 'all' ? 'Filtreyle eşleşen öğrenci bulunamadı.' : 'Sisteme kayıtlı öğrencin bulunmuyor.'}</p>
         </div>
       ) : (
         <div className="space-y-4">
-          {students.map(student => (
+          {filteredStudents.map(student => (
             <Card 
               key={student.student_user_id} 
               className="hover:bg-muted/50 transition-colors cursor-pointer"
-              onClick={() => navigate(`/student/${student.student_user_id}`)}
+              onClick={() => navigate(`/coach/student/${student.student_user_id}`)}
             >
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="flex-1 space-y-3">

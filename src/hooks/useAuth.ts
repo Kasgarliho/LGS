@@ -33,7 +33,6 @@ export const useAuth = (isMuted: boolean) => {
       setAuthLoading(false);
     } else {
       const fetchUserData = async () => {
-        console.log(`[useAuth] useEffect: Kullanıcı ID'si bulundu (${userId}). Veri çekiliyor...`);
         const { data, error } = await supabase
           .from('kullanicilar')
           .select('ad_soyad, rol')
@@ -41,11 +40,10 @@ export const useAuth = (isMuted: boolean) => {
           .single();
 
         if (data) {
-          console.log(`[useAuth] useEffect: Veri başarıyla çekildi. Rol: ${data.rol}`);
           setUserName(data.ad_soyad);
           setUserRole(data.rol);
         } else {
-          console.error("[useAuth] useEffect: Kullanıcı verisi çekilemedi, oturum sonlandırılıyor:", error);
+          console.error("Kullanıcı verisi çekilemedi, oturum sonlandırılıyor:", error);
           storage.clearCurrentUserId();
           setUserId(null);
         }
@@ -58,23 +56,38 @@ export const useAuth = (isMuted: boolean) => {
   }, [userId]);
 
   const handleRegistration = async () => {
+    // =================================================================
+    // DÜZELTME: Tüm giriş bilgilerini büyük harfe çevirerek standart hale getiriyoruz.
+    // =================================================================
     const finalName = tempName.trim().toUpperCase();
     const finalClassName = className.trim().toUpperCase();
-    const finalCoachCode = coachCode.trim().toLowerCase();
+    const finalCoachCode = coachCode.trim().toUpperCase(); // Bu da artık büyük harf
 
     if (!finalName || !finalClassName || !finalCoachCode) {
         toast.error("Lütfen tüm alanları doldurun.");
         return;
     }
     try {
-        const { data: coachData, error: coachError } = await supabase.from('koclar').select('eposta').ilike('koc_kodu', finalCoachCode).single();
+        const { data: coachData, error: coachError } = await supabase
+            .from('koclar')
+            .select('eposta')
+            .ilike('koc_kodu', finalCoachCode) // .ilike zaten harf duyarsızdır, ama tutarlılık iyidir.
+            .single();
+
         if (coachError || !coachData) {
             toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
             return;
         }
         const finalCoachEmail = coachData.eposta;
 
-        const { data: studentData, error: studentError } = await supabase.from('ogrenciler').select('*').ilike('ad_soyad', finalName).ilike('sinif', finalClassName).ilike('koc_eposta', finalCoachEmail).single();
+        const { data: studentData, error: studentError } = await supabase
+            .from('ogrenciler')
+            .select('*')
+            .ilike('ad_soyad', finalName)
+            .ilike('sinif', finalClassName)
+            .ilike('koc_eposta', finalCoachEmail)
+            .single();
+            
         if (studentError || !studentData) {
             toast.error("Bilgiler eşleşmedi. Ad, sınıf ve koç kodunu kontrol et.");
             return;

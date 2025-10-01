@@ -1,5 +1,5 @@
 import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react-swc"; // DÜZELTME: Doğru paket import edildi
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
@@ -14,5 +14,11 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // Test bölümü daha önce eklenmişti, burada olduğundan emin oluyoruz.
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './setupTests.ts',
   },
 }));
