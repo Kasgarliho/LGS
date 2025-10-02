@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Crown, Medal, Award, CheckCircle, PlusCircle } from 'lucide-react';
+import { Crown, Medal, Award, CheckCircle, PlusCircle, Info } from 'lucide-react';
 import { useAppContext } from './AppLayout';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { tr } from 'date-fns/locale';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -45,6 +48,11 @@ export default function LeaderboardPage() {
     fetchLeaderboard();
   }, []);
 
+  const now = new Date();
+  const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+  const weekRange = `${format(weekStart, 'dd MMMM yyyy, HH:mm', { locale: tr })} - ${format(weekEnd, 'dd MMMM yyyy, HH:mm', { locale: tr })}`;
+
   if (loading) {
     return <div className="text-center p-8">Liderlik tablosu yükleniyor...</div>;
   }
@@ -57,8 +65,22 @@ export default function LeaderboardPage() {
     <div className="space-y-6 animate-slide-up">
       <Card className="shadow-lg bg-gradient-to-r from-green-400 to-blue-500 text-white">
         <CardHeader>
-          <CardTitle>Haftanın Liderleri</CardTitle>
-          <CardDescription className="text-white/90">Sıralama, son 7 günde "Günlük Görev"lerden kazanılan doğru sayısına göredir.</CardDescription>
+          <div className="flex items-center gap-2">
+            <CardTitle>Haftanın Liderleri</CardTitle>
+            <HoverCard>
+              <HoverCardTrigger>
+                <Info className="h-4 w-4 text-white/80 cursor-pointer" />
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <p className="text-sm">
+                  Bu sıralama, aşağıda belirtilen zaman aralığındaki "Günlük Görev" doğru sayılarına dayanmaktadır:
+                  <br />
+                  <strong className="mt-2 block">{weekRange}</strong>
+                </p>
+              </HoverCardContent>
+            </HoverCard>
+          </div>
+          <CardDescription className="text-white/90">Son 7 günde en çok doğru yapan öğrenciler.</CardDescription>
         </CardHeader>
       </Card>
 
@@ -81,7 +103,6 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="flex-1 space-y-1">
                     <p className={`font-bold ${entry.user_id === userId ? 'text-primary' : ''}`}>{entry.user_name}</p>
-                    {/* YENİ: Manuel eklenen doğru sayısı ek bilgi olarak gösteriliyor */}
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <PlusCircle className="h-3 w-3" />
                       <span>+{entry.weekly_manual_correct} manuel doğru</span>

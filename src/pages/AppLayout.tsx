@@ -9,6 +9,9 @@ import { App } from '@capacitor/app';
 
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/useAuth';
 import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
@@ -23,7 +26,6 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
 
-  // Auth hook'unu context için hala kullanıyoruz
   const auth = useAuth(isMuted);
   const { userId, userName, userRole } = auth;
 
@@ -39,14 +41,6 @@ export default function AppLayout() {
     }
   });
   const scheduler = useScheduler(userId, isInitialized);
-
-  useEffect(() => {
-    if (userId) {
-      setTheme(storage.loadTheme(userId));
-    } else {
-      setTheme('dark');
-    }
-  }, [userId]);
 
   useEffect(() => {
     const checkDeepLink = async () => {
@@ -67,11 +61,27 @@ export default function AppLayout() {
       }
       return listener;
     };
-    const listener = checkDeepLink();
+    const listenerPromise = checkDeepLink();
+
+    // =================================================================
+    // DÜZELTME BURADA: Temizleme fonksiyonu asenkron hale getirildi.
+    // =================================================================
     return () => {
-      listener.then(l => l.remove());
+      const removeListener = async () => {
+        const listener = await listenerPromise;
+        listener.remove();
+      };
+      removeListener();
     };
   }, [navigate]);
+
+  useEffect(() => {
+    if (userId) {
+      setTheme(storage.loadTheme(userId));
+    } else {
+      setTheme('dark');
+    }
+  }, [userId]);
 
   useEffect(() => {
     if (userId && userRole !== 'koç') {
@@ -98,7 +108,7 @@ export default function AppLayout() {
         }
       }
     }
-  }, [userId, userRole, studyData.lastActiveDate]);
+  }, [userId, userRole, studyData.lastActiveDate, coreData.streak, coreData.streakFreezes, coreData.setStreak, coreData.setStreakFreezes, studyData.setLastActiveDate, isMuted]);
 
   useEffect(() => {
     const requestPermissions = async () => {

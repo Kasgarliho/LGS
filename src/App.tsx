@@ -94,9 +94,9 @@ function AppController() {
             <>
               <DialogHeader><DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle><DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription></DialogHeader>
               <div className="py-4 space-y-4">
-                <Input placeholder="Adın Soyadın (Tümü Büyük)" value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
+                <Input placeholder="Adın Soyadın(Tümü Büyük))" value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
                 <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
-                <Input placeholder="Koç Kodu(Coşkun Hoca)" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
+                <Input placeholder="Koç Kodu(Coşkun Hoca" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
                 <Button onClick={auth.handleRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
                 {knownUsers.length > 0 && (<Button variant="ghost" className="w-full" onClick={() => auth.setShowNameModal(false)}>Geri</Button>)}
               </div>

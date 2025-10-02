@@ -12,7 +12,7 @@ const BASE_KEYS = {
   STREAK_FREEZES: 'streak_freezes',
   LAST_ACTIVE_DATE: 'last_active_date',
   USER_AVATARS: 'user_avatars',
-  CUSTOM_STUDY_PLAN: 'custom_study_plan', // Artık kullanıcıya özel
+  CUSTOM_STUDY_PLAN: 'custom_study_plan',
   IS_MUTED: 'is_muted',
   MANUAL_SCHEDULE: 'manual_schedule',
   DAILY_SOLVED_SUBJECTS: 'daily_solved_subjects',
