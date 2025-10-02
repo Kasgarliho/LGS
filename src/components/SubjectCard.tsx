@@ -9,14 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, BookOpen } from "lucide-react";
 import { lgsTopics } from "@/data/lgsTopics";
 import { toast } from 'sonner';
-
-// =================================================================
-// GEREKLİ CAPACITOR KÜTÜPHANELERİ
-// =================================================================
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-// =================================================================
+import { useAppContext } from "@/pages/AppLayout";
 
 interface SubjectCardProps {
   subject: Subject;
@@ -56,32 +52,26 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
     }
   };
   
-  // =================================================================
-  // DÜZELTİLMİŞ MEB UYGULAMA AÇMA FONKSİYONU
-  // =================================================================
   const handleOpenMebiApp = async () => {
-    // Doğru MEB EBA uygulamasının mağaza linkleri
+    const appUrl = 'mebi://';
     const androidStoreUrl = 'https://play.google.com/store/apps/details?id=tr.gov.eba.mebi';
-    const iosStoreUrl = 'https://apps.apple.com/tr/app/id1438258386'; // MEB Mobil Bilgi Servisi ID'si
+    const iosStoreUrl = 'https://apps.apple.com/tr/app/id1438258386';
 
     const platform = Capacitor.getPlatform();
-    
-    let storeUrl = '';
-    if (platform === 'ios') {
-      storeUrl = iosStoreUrl;
-    } else { // Android ve diğer platformlar
-      storeUrl = androidStoreUrl;
-    }
+    const storeUrl = platform === 'ios' ? iosStoreUrl : androidStoreUrl;
 
     try {
-      // Doğrudan mağaza URL'sini açmayı deniyoruz.
-      // Android kendi içinde uygulamanın yüklü olup olmadığını kontrol eder.
-      await Browser.open({ url: storeUrl });
-      toast.success("MEB uygulaması açılıyor...");
-
+      const canOpen = await AppLauncher.canOpenUrl({ url: appUrl });
+      if (canOpen.value) {
+        await AppLauncher.openUrl({ url: appUrl });
+        toast.info("MEB uygulaması açılıyor...");
+      } else {
+        await Browser.open({ url: storeUrl });
+        toast.info("MEB uygulaması bulunamadı, mağaza açılıyor...");
+      }
     } catch (e) {
-      console.error('Uygulama açılırken hata oluştu:', e);
-      toast.error("Uygulama açılamadı. Lütfen tekrar deneyin.");
+      console.error('Uygulama açılırken hata oluştu, mağaza deneniyor:', e);
+      await Browser.open({ url: storeUrl });
     }
   };
 

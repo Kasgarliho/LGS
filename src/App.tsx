@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import AppLayout from "./pages/AppLayout";
+import AppLayout, { useAppContext } from "./pages/AppLayout";
 import Index from "./pages/Index";
 import ProgramimSayfasi from "./pages/ProgramimSayfasi";
 import NotFound from "./pages/NotFound";
@@ -20,24 +20,22 @@ import { SettingsPage } from "./pages/SettingsPage";
 import GecmisKayitlarSayfasi from "./pages/GecmisKayitlarSayfasi";
 import StudentDetailPage from "./pages/StudentDetailPage";
 import SchedulePage from "./pages/SchedulePage";
-import { useAppContext } from "./pages/AppLayout";
-
+import LeaderboardPage from "./pages/LeaderboardPage";
 
 const queryClient = new QueryClient();
 
 const StatisticsPage = () => {
   const context = useAppContext();
-  if (!context) return null; // Context yüklenene kadar bekle
+  if (!context) return null;
   return <Statistics subjects={context.subjects} sessions={context.sessions} />;
 };
 const AchievementsPage = () => {
   const context = useAppContext();
-  if (!context) return null; // Context yüklenene kadar bekle
+  if (!context) return null;
   return <AchievementsList achievements={context.achievements} />;
 };
 
-
-// Öğrenci arayüzünün rotaları
+// ÖĞRENCİ arayüzünün "kat planı"
 const studentRouter = createBrowserRouter([
   {
     path: "/",
@@ -52,12 +50,13 @@ const studentRouter = createBrowserRouter([
       { path: "profile", element: <ProfilePage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "gecmis", element: <GecmisKayitlarSayfasi /> },
+      { path: "leaderboard", element: <LeaderboardPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
 ]);
 
-// Koç arayüzünün rotaları
+// KOÇ arayüzünün "kat planı"
 const coachRouter = createBrowserRouter([
   {
     path: "/",
@@ -66,12 +65,14 @@ const coachRouter = createBrowserRouter([
       { index: true, element: <SchedulePage /> },
       { path: "student/:studentId", element: <StudentDetailPage /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "profile", element: <ProfilePage /> },
+      { path: "leaderboard", element: <LeaderboardPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
 ]);
 
-// Ana Kontrol Bileşeni
+// ANA KONTROL BİLEŞENİ: Hangi kat planının kullanılacağına karar verir
 function AppController() {
   const auth = useAuth(false);
   const { userId, userRole, authLoading, knownUsers, handleSwitchUser, showRegistration } = auth;

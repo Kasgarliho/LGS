@@ -5,10 +5,11 @@ import { toast } from 'sonner';
 import { Achievement, UserAvatars, Subject } from '@/types';
 import { achievements as initialAchievementsData } from '@/data/achievements';
 import { avatars as allAvatars } from "@/data/avatars";
-import { playPurchaseSound, playConfirmSound } from "@/utils/sounds";
+import { playPurchaseSound, playConfirmSound, playFailSound } from "@/utils/sounds";
 
 export const useCoreData = (
   userId: string | null,
+  userRole: string | null, // YENİ: userRole parametresi eklendi
   isInitialized: boolean,
   isMuted: boolean
 ) => {
@@ -26,6 +27,16 @@ export const useCoreData = (
   };
 
   useEffect(() => {
+    if (userRole === 'koç') {
+      const allAvatarIds = allAvatars.map(avatar => avatar.id);
+      setUserAvatars(prev => ({ ...prev, unlocked: allAvatarIds }));
+      setTotalPoints(9999);
+      setStreak(99);
+      setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true })));
+      setIsCloudDataLoaded(true);
+      return;
+    }
+    
     if (userId) {
       const fetchCoreData = async () => {
         const { data: cloudData, error } = await supabase
@@ -35,7 +46,6 @@ export const useCoreData = (
           .maybeSingle();
 
         if (error || !cloudData) {
-          console.error("Bulut çekirdek verileri çekilemedi, lokal veriler kullanılacak:", error);
           setTotalPoints(storage.loadPoints(userId));
           setStreak(storage.loadStreak(userId));
           setStreakFreezes(storage.loadStreakFreezes(userId));
@@ -67,10 +77,12 @@ export const useCoreData = (
       setAchievements(initialAchievementsData);
       setIsCloudDataLoaded(true);
     }
-  }, [userId]);
+  }, [userId, userRole]);
   
   useEffect(() => {
+    if (userRole === 'koç') return; // Koçların başarım kazanmasına gerek yok
     if (!isInitialized || !userId || achievements.length === 0) return;
+    
     const unlockedAchievements = achievements.filter(a => a.unlocked);
     const avatarsToUnlock = allAvatars.filter(avatar =>
       avatar.unlockMethod === 'achievement' &&
@@ -86,7 +98,7 @@ export const useCoreData = (
         return currentAvatars;
       });
     }
-  }, [achievements, isInitialized, userId]);
+  }, [achievements, isInitialized, userId, userRole]);
 
   useEffect(() => { if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } }, [totalPoints, isInitialized, userId]);
   useEffect(() => { if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } }, [streak, isInitialized, userId]);
@@ -101,7 +113,7 @@ export const useCoreData = (
   }, [achievements, isInitialized, isCloudDataLoaded, userId]);
 
   const handleBuyStreakFreeze = () => {
-    if (!userId) return;
+    if (!userId || userRole === 'koç') return;
     const price = 200;
     if (totalPoints >= price) {
       setTotalPoints(prev => prev - price);
@@ -114,7 +126,7 @@ export const useCoreData = (
   };
 
   const handleBuyAvatar = (avatarId: string) => {
-    if (!userId) return;
+    if (!userId || userRole === 'koç') return;
     const avatar = allAvatars.find(a => a.id === avatarId);
     if (!avatar || avatar.unlockMethod !== 'purchase') return;
     const price = avatar.price || 0;
@@ -138,7 +150,7 @@ export const useCoreData = (
   };
   
   const checkAchievements = (subjects: Subject[], trigger: { type: 'quiz' | 'questions' | 'english_unit', data?: any }) => {
-    if (!userId) return;
+    if (!userId || userRole === 'koç') return;
     const locked = achievements.filter(a => !a.unlocked);
     if (locked.length === 0) return;
     const totalQuestions = subjects.reduce((sum, s) => sum + s.correct + s.incorrect, 0);

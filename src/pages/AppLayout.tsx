@@ -23,11 +23,13 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
 
+  // Auth hook'unu context için hala kullanıyoruz
   const auth = useAuth(isMuted);
-  const { userId, userName, handleLogout, handleSwitchUser, knownUsers, userRole, authLoading } = auth;
+  const { userId, userName, userRole } = auth;
 
-  const coreData = useCoreData(userId, isInitialized, isMuted);
+  const coreData = useCoreData(userId, userRole, isInitialized, isMuted);
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
+    if (userRole === 'koç') return;
     coreData.setTotalPoints(prev => prev + (result.correct * 10));
     if (newDailySolvedCount === 3) {
       coreData.setStreak(prev => prev + 1);
@@ -72,7 +74,7 @@ export default function AppLayout() {
   }, [navigate]);
 
   useEffect(() => {
-    if (userId) {
+    if (userId && userRole !== 'koç') {
       const { lastActiveDate, setLastActiveDate } = studyData;
       const { streakFreezes, setStreak, setStreakFreezes } = coreData;
       if (lastActiveDate) {
@@ -96,7 +98,7 @@ export default function AppLayout() {
         }
       }
     }
-  }, [userId, studyData.lastActiveDate, coreData.streakFreezes, coreData.setStreak, coreData.setStreakFreezes, studyData.setLastActiveDate, isMuted]);
+  }, [userId, userRole, studyData.lastActiveDate]);
 
   useEffect(() => {
     const requestPermissions = async () => {
@@ -170,6 +172,7 @@ export default function AppLayout() {
             isMuted={isMuted}
             toggleMute={toggleMute}
             isHomePage={isHomePage}
+            userRole={userRole}
           />
           <main>
             <div className="animate-slide-up">

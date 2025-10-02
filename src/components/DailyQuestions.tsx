@@ -1,4 +1,3 @@
-import { Question } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -53,26 +52,23 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
       
       <CardContent className="space-y-4">
         {availableSubjects.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {availableSubjects.map(subject => (
+              // DÜZELTME: Kart yapısı dikey hizalamaya göre yeniden düzenlendi
               <Card 
                 key={subject.id} 
-                className="hover:shadow-elegant transition-shadow cursor-pointer border-border/50"
+                className="hover:shadow-elegant transition-shadow cursor-pointer border-border/50 flex flex-col justify-between"
                 onClick={() => onSelectSubject(subject.id)}
               >
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-md ${getSubjectColor(subject.id)}`}>
-                      <Book className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">{subject.name}</h4>
-                      <p className="text-xs text-muted-foreground">6 soru</p>
-                    </div>
+                <CardContent className="p-4 flex flex-col items-center text-center flex-1">
+                  <div className={`p-3 mb-3 rounded-lg ${getSubjectColor(subject.id)}`}>
+                    <Book className="h-6 w-6" />
                   </div>
-                  <Button variant="ghost" size="icon">
-                    <Play className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col flex-1 justify-center">
+                    <h4 className="font-semibold leading-tight">{subject.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-1">6 soru</p>
+                  </div>
+                  <Play className="h-5 w-5 text-muted-foreground mt-3" />
                 </CardContent>
               </Card>
             ))}

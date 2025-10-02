@@ -14,7 +14,8 @@ interface HeaderProps {
   currentAvatarId: string;
   isMuted: boolean;
   toggleMute: () => void;
-  isHomePage: boolean; // YENİ: Bu prop geri eklendi
+  isHomePage: boolean;
+  userRole: string | null;
 }
 
 export default function Header({ 
@@ -28,15 +29,13 @@ export default function Header({
   currentAvatarId,
   isMuted,
   toggleMute,
-  isHomePage // YENİ: Prop olarak alındı
+  isHomePage,
+  userRole
 }: HeaderProps) {
   
   const currentAvatar = avatars.find(a => a.id === currentAvatarId) || avatars[0];
   const firstName = userName ? userName.split(' ')[0] : 'Misafir';
   
-  // KALDIRILDI: Hatalı olan ve reaktif çalışmayan window.location satırı kaldırıldı.
-  // const isHomePage = window.location.pathname === '/';
-
   const renderHeaderContent = () => (
     <div className="flex items-center justify-between p-3 md:p-4 rounded-xl shadow-card bg-card">
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
@@ -49,13 +48,23 @@ export default function Header({
         </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">Hey, {firstName}!</h1>
+          {isHomePage && userRole !== 'koç' && (
+            <p className="text-xs md:text-sm text-muted-foreground">
+              Bugünkü hedeflerine ulaşmaya hazır mısın?
+            </p>
+          )}
         </div>
       </div>
       
       <div className="flex items-center gap-1 md:gap-2">
-        <Link to="/market" title="Market" className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-colors h-8 w-8 md:h-9 md:w-9 hover:bg-accent hover:text-accent-foreground">
-          <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
-        </Link>
+        {/* ======================================================= */}
+        {/* DÜZELTME BURADA: Ayarlar butonu dışarı alındı */}
+        {/* ======================================================= */}
+        {userRole !== 'koç' && (
+          <Link to="/market" title="Market" className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-colors h-8 w-8 md:h-9 md:w-9 hover:bg-accent hover:text-accent-foreground">
+            <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />
+          </Link>
+        )}
         <Link to="/settings" title="Ayarlar" className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-colors h-8 w-8 md:h-9 md:w-9 hover:bg-accent hover:text-accent-foreground">
           <Settings className="h-4 w-4 md:h-5 md:w-5" />
         </Link>
@@ -113,7 +122,7 @@ export default function Header({
   return (
     <header className="space-y-4 md:space-y-6 mb-4 md:mb-6 animate-slide-up">
       {renderHeaderContent()}
-      {isHomePage && renderStatsCards()}
+      {isHomePage && userRole !== 'koç' && renderStatsCards()}
     </header>
   );
 }

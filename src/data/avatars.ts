@@ -436,5 +436,12 @@ export const avatars: Avatar[] = [
     "image": "/avatars/pilot.png",
     "unlockMethod": "purchase",
     "price": 225
-  }
+  },
+  {
+    "id": "Teacher",
+    "name": "Öğretmen",
+    "image": "/avatars/teacher.png",
+    "unlockMethod": "purchase",
+    "price": 1000
+  },
 ];

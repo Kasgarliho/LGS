@@ -77,7 +77,7 @@ export default function StudentDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{studentName} - Rapor Paneli</CardTitle>
+          <CardTitle className="text-2xl">{studentName} - </CardTitle>
           <CardDescription>Öğrencinin genel ve haftalık performans analizi.</CardDescription>
         </CardHeader>
       </Card>

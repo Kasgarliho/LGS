@@ -1,17 +1,15 @@
-// src/components/BottomNav.tsx
-
 import { Link, useLocation } from "react-router-dom";
-import { Home, BookOpen, Calendar, BarChart3 } from "lucide-react"; // ShoppingCart ikonu kaldırıldı
+import { Home, BookOpen, Calendar, BarChart3, Trophy } from "lucide-react";
 import { playConfirmSound } from "@/utils/sounds";
 
 interface BottomNavProps {
   isMuted: boolean;
 }
 
-// GÜNCELLENDİ: Market linki listeden kaldırıldı
 const navItems = [
   { id: 'home', path: '/', icon: Home, label: 'Ana Sayfa' },
   { id: 'practice', path: '/practice', icon: BookOpen, label: 'Çalışma' },
+  { id: 'leaderboard', path: '/leaderboard', icon: Trophy, label: 'Liderlik' },
   { id: 'schedule', path: '/program', icon: Calendar, label: 'Program' },
   { id: 'statistics', path: '/statistics', icon: BarChart3, label: 'İstatistik' },
 ];

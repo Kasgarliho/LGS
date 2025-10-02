@@ -23,12 +23,14 @@ const WEEKLY_GOAL = 250;
 
 export default function SchedulePage() {
   const navigate = useNavigate();
-  const { userId } = useAppContext();
+  const context = useAppContext();
   const [allStudents, setAllStudents] = useState<StudentSummary[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('all'); // YENİ: Seçili sınıfı tutan state
+  const [selectedClass, setSelectedClass] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const userId = context?.userId;
 
   useEffect(() => {
     if (!userId) {
@@ -52,14 +54,12 @@ export default function SchedulePage() {
 
     fetchStudents();
   }, [userId]);
-
-  // YENİ: Öğrenci listesinden benzersiz sınıf adlarını al
+  
   const classNames = useMemo(() => {
     const uniqueClasses = [...new Set(allStudents.map(student => student.student_class || 'Belirtilmemiş'))];
     return ['all', ...uniqueClasses.sort()];
   }, [allStudents]);
-
-  // DÜZELTME: Bu blok artık gruplama yerine filtreleme yapıyor
+  
   const filteredStudents = useMemo(() => {
     return allStudents
       .filter(student => 
@@ -75,8 +75,13 @@ export default function SchedulePage() {
     return formatDistanceToNow(new Date(dateString), { addSuffix: true, locale: tr });
   };
   
-  if (loading) { return <div className="text-center p-8">Öğrenci verileri yükleniyor...</div>; }
-  if (error) { return <div className="text-center p-8 text-destructive">{error}</div>; }
+  if (!context || loading) {
+    return <div className="text-center p-8">Öğrenci verileri yükleniyor...</div>;
+  }
+  
+  if (error) {
+    return <div className="text-center p-8 text-destructive">{error}</div>;
+  }
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -113,7 +118,6 @@ export default function SchedulePage() {
         </CardContent>
       </Card>
 
-      {/* DÜZELTME: Artık gruplama yok, doğrudan filtrelenmiş liste gösteriliyor */}
       {filteredStudents.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
           <p>{searchTerm || selectedClass !== 'all' ? 'Filtreyle eşleşen öğrenci bulunamadı.' : 'Sisteme kayıtlı öğrencin bulunmuyor.'}</p>
@@ -124,7 +128,7 @@ export default function SchedulePage() {
             <Card 
               key={student.student_user_id} 
               className="hover:bg-muted/50 transition-colors cursor-pointer"
-              onClick={() => navigate(`/coach/student/${student.student_user_id}`)}
+              onClick={() => navigate(`/student/${student.student_user_id}`)}
             >
               <CardContent className="p-4 flex items-center gap-4">
                 <div className="flex-1 space-y-3">
