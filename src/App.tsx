@@ -15,7 +15,7 @@ import Statistics from "@/components/Statistics";
 import AchievementsList from "@/components/AchievementsList";
 import PracticePage from "./pages/PracticePage";
 import { MarketPage } from "./pages/MarketPage";
-import ProfilePage  from "./pages/ProfilePage";
+import  ProfilePage  from "./pages/ProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import GecmisKayitlarSayfasi from "./pages/GecmisKayitlarSayfasi";
 import StudentDetailPage from "./pages/StudentDetailPage";
@@ -35,7 +35,6 @@ const AchievementsPage = () => {
   return <AchievementsList achievements={context.achievements} />;
 };
 
-// ÖĞRENCİ arayüzünün "kat planı"
 const studentRouter = createBrowserRouter([
   {
     path: "/",
@@ -56,7 +55,6 @@ const studentRouter = createBrowserRouter([
   },
 ]);
 
-// KOÇ arayüzünün "kat planı"
 const coachRouter = createBrowserRouter([
   {
     path: "/",
@@ -72,7 +70,6 @@ const coachRouter = createBrowserRouter([
   },
 ]);
 
-// ANA KONTROL BİLEŞENİ: Hangi kat planının kullanılacağına karar verir
 function AppController() {
   const auth = useAuth(false);
   const { userId, userRole, authLoading, knownUsers, handleSwitchUser, showRegistration } = auth;
@@ -110,7 +107,7 @@ function AppController() {
     );
   }
 
-  return userRole === 'koç' ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
+  return userRole?.toLowerCase() === 'koç' ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
 }
 
 const App = () => {

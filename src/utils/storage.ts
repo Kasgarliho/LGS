@@ -12,9 +12,9 @@ const BASE_KEYS = {
   STREAK_FREEZES: 'streak_freezes',
   LAST_ACTIVE_DATE: 'last_active_date',
   USER_AVATARS: 'user_avatars',
+  CUSTOM_STUDY_PLAN: 'custom_study_plan',
   IS_MUTED: 'is_muted',
   MANUAL_SCHEDULE: 'manual_schedule',
-  CUSTOM_STUDY_PLAN: 'custom_study_plan',
   DAILY_SOLVED_SUBJECTS: 'daily_solved_subjects',
   NOTIFICATION_SETTINGS: 'notification_settings',
 };
@@ -93,6 +93,18 @@ export const storage = {
   },
   saveUserAvatars: (userId: string, avatars: UserAvatars) => localStorage.setItem(createKey(userId, BASE_KEYS.USER_AVATARS), JSON.stringify(avatars)),
   
+  loadCustomStudyPlan: (userId: string): CustomStudyPlan | null => {
+    const data = localStorage.getItem(createKey(userId, BASE_KEYS.CUSTOM_STUDY_PLAN));
+    return data ? JSON.parse(data) : null;
+  },
+  saveCustomStudyPlan: (userId: string, plan: CustomStudyPlan | null) => {
+    if (plan) {
+      localStorage.setItem(createKey(userId, BASE_KEYS.CUSTOM_STUDY_PLAN), JSON.stringify(plan));
+    } else {
+      localStorage.removeItem(createKey(userId, BASE_KEYS.CUSTOM_STUDY_PLAN));
+    }
+  },
+
   loadDailySolvedSubjects: (userId: string, todayStr: string): string[] => {
     const storedData = localStorage.getItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS));
     if (storedData) {
@@ -116,18 +128,6 @@ export const storage = {
   },
   saveManualSchedule: (schedule: ManualSchedule) => localStorage.setItem(createGlobalKey(BASE_KEYS.MANUAL_SCHEDULE), JSON.stringify(schedule)),
   
-  loadCustomStudyPlan: (): CustomStudyPlan | null => {
-    const data = localStorage.getItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN));
-    return data ? JSON.parse(data) : null;
-  },
-  saveCustomStudyPlan: (plan: CustomStudyPlan | null) => {
-    if (plan) {
-      localStorage.setItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN), JSON.stringify(plan));
-    } else {
-      localStorage.removeItem(createGlobalKey(BASE_KEYS.CUSTOM_STUDY_PLAN));
-    }
-  },
-  
   loadNotificationSettings: (): NotificationSettings => {
     const data = localStorage.getItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS));
     const defaults: NotificationSettings = {
@@ -148,5 +148,3 @@ export const storage = {
   },
   saveNotificationSettings: (settings: NotificationSettings) => localStorage.setItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS), JSON.stringify(settings)),
 };
-
-export type { NotificationSettings };
