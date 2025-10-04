@@ -2,12 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BellRing, History, ChevronRight, LogOut, User, Users, CheckCircle } from "lucide-react";
+import { BellRing, History, ChevronRight, LogOut, User, Users, Swords } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppContext } from "./AppLayout";
 import { Button } from "@/components/ui/button";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, 
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import  ProfileSwitcher  from "@/components/ProfileSwitcher";
 
 export const SettingsPage = () => {
   const { 
@@ -16,14 +16,17 @@ export const SettingsPage = () => {
     handleLogout, 
     userName, 
     knownUsers, 
+    userId, 
     handleSwitchUser, 
-    userId 
+    handleRemoveKnownUser, 
+    showRegistration 
   } = useAppContext();
 
   if (!notificationSettings) {
     return <div>Yükleniyor...</div>;
   }
 
+  // Fonksiyonlar
   const handleStudyReminderToggle = (isChecked: boolean) => {
     handleUpdateNotificationSettings({ ...notificationSettings, studyPlanReminder: { ...notificationSettings.studyPlanReminder, enabled: isChecked } });
   };
@@ -38,6 +41,10 @@ export const SettingsPage = () => {
   };
   const handleStreakReminderToggle = (isChecked: boolean) => {
     handleUpdateNotificationSettings({ ...notificationSettings, streakReminder: isChecked });
+  };
+  // YENİ: Meydan okuma hatırlatıcısı için fonksiyon
+  const handleChallengeReminderToggle = (isChecked: boolean) => {
+    handleUpdateNotificationSettings({ ...notificationSettings, challengeReminder: isChecked });
   };
 
   return (
@@ -69,22 +76,17 @@ export const SettingsPage = () => {
       {knownUsers && knownUsers.length > 1 && (
         <Card className="shadow-card border-border/50">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Profilleri Değiştir</CardTitle>
-            <CardDescription>Bu cihazda kayıtlı diğer profillere hızlıca geçiş yap.</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Profilleri Yönet</CardTitle>
+            <CardDescription>Bu cihazda kayıtlı profiller arasında geçiş yap veya bir profili kaldır.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {knownUsers.map(user => (
-              <Button
-                key={user.userId}
-                variant={user.userId === userId ? "secondary" : "outline"}
-                className="w-full justify-start gap-2"
-                onClick={() => user.userId !== userId && handleSwitchUser(user.userId)}
-                disabled={user.userId === userId}
-              >
-                {user.userId === userId && <CheckCircle className="h-4 w-4 text-primary" />}
-                {user.userName}
-              </Button>
-            ))}
+          <CardContent>
+            <ProfileSwitcher 
+              knownUsers={knownUsers}
+              activeUserId={userId}
+              onSwitch={handleSwitchUser}
+              onRemove={handleRemoveKnownUser}
+              onAddNew={showRegistration}
+            />
           </CardContent>
         </Card>
       )}
@@ -101,6 +103,23 @@ export const SettingsPage = () => {
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
           </Link>
+        </CardContent>
+      </Card>
+      
+      {/* YENİ: Meydan Okuma Bildirimi Kartı */}
+      <Card className="shadow-card border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Swords className="h-5 w-5 text-primary" /> Meydan Okuma Bildirimi</CardTitle>
+          <CardDescription>Uygulamayı bir süre kullanmadığında seni motive etmek için bildirim gönderir.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="challenge-reminder">Hatırlatıcıyı Etkinleştir</Label>
+              <p className="text-sm text-muted-foreground">3 gün ara verdiğinde bildirim al.</p>
+            </div>
+            <Switch id="challenge-reminder" checked={notificationSettings.challengeReminder ?? false} onCheckedChange={handleChallengeReminderToggle} />
+          </div>
         </CardContent>
       </Card>
       

@@ -4,28 +4,12 @@ export const motivationalQuotes = [
     author: "Mustafa Kemal Atatürk"
   },
   {
-    text: "Bilgi güçtür, ancak uygulama başarıdır.",
-    author: "Anonim"
-  },
-  {
-    text: "Öğrenmeyi bıraktığın gün, öğretmeyi de bırakırsın.",
-    author: "John Cotton Dana"
-  },
-  {
     text: "Başarı, hazırlık fırsatla buluştuğunda doğar.",
-    author: "Anonim"
-  },
-  {
-    text: "Tek seferde başarılı olmasan da, her seferinde biraz daha iyileşirsin.",
     author: "Anonim"
   },
   {
     text: "Bilim insanı olmak için yaratılıştan zeki olmak gerekmez, meraklı olmak yeterlidir.",
     author: "Aziz Sancar"
-  },
-  {
-    text: "Okuyun, öğrenin, araştırın. Hiçbir şey kişisel gelişimden daha değerli değildir.",
-    author: "Anonim"
   },
   {
     text: "Küçük adımlar büyük yolculukların başlangıcıdır.",
@@ -36,7 +20,45 @@ export const motivationalQuotes = [
     author: "Anonim"
   },
   {
-    text: "Her gün biraz daha iyi ol, dün olduğundan.",
+    text: "Vatanını en çok seven, görevini en iyi yapandır.",
+    author: "Mustafa Kemal Atatürk"
+  },
+  {
+    text: "Zafer, 'Zafer benimdir' diyebilenindir. Başarı ise, 'Başaracağım' diye başlayarak sonunda 'Başardım' diyebilenindir.",
+    author: "Mustafa Kemal Atatürk"
+  },
+
+  // --- YENİ EKLENEN EĞLENCELİ SÖZLER ---
+  {
+    text: "Başarının sırrı mı? Google, bolca çay ve son teslim tarihinin paniği.",
+    author: "Bir Bilge Öğrenci"
+  },
+  {
+    text: "Unutma, beyin de bir kastır. Bugün biraz 'soru press' yapma zamanı!",
+    author: "Anonim"
+  },
+  {
+    text: "Hata yapmaktan korkma. Silgilerin bir üretim amacı var sonuçta.",
+    author: "Anonim"
+  },
+  {
+    text: "Tembellik, yorulmadan önce dinlenme sanatıdır. Ama sen yine de bir iki soru çöz, ne olur ne olmaz.",
+    author: "Esprili Tembel"
+  },
+  {
+    text: "Hayat bir oyunsa, LGS de 'boss fight' olsa gerek. Bol bol 'level' atla!",
+    author: "Oyuncu Atasözü"
+  },
+  {
+    text: "Her başarılı öğrencinin arkasında, bol miktarda kafein vardır.",
+    author: "Anonim"
+  },
+  {
+    text: "Bugünün işini yarına bırakma. Yarın yine bir sürü işin olacak zaten.",
+    author: "Gerçekçi Panda"
+  },
+  {
+    text: "Matematik, çözene kadar 'x'i bulmaya çalışıp, bulunca da 'bu ne işime yarayacak?' diye sormaktır.",
     author: "Anonim"
   }
 ];

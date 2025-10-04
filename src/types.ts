@@ -17,7 +17,7 @@ export interface Subject {
 export interface StudySession {
   id: string;
   subjectId: string;
-  duration: number;
+  duration: number; // in minutes
   questionsCompleted: number;
   correctCount: number;
   incorrectCount: number;
@@ -115,6 +115,20 @@ export interface KnownUser {
   userName: string;
 }
 
+export interface WordDuel {
+  id: number;
+  created_at: string;
+  challenger_id: string;
+  opponent_id: string;
+  unit: number;
+  challenger_score?: number;
+  challenger_time?: number;
+  opponent_score?: number;
+  opponent_time?: number;
+  status: 'pending' | 'completed';
+  winner_id?: string;
+}
+
 export type AppContextType = {
   // useAuth'dan gelenler
   userId: string | null;
@@ -134,6 +148,7 @@ export type AppContextType = {
   knownUsers: KnownUser[];
   handleSwitchUser: (userId: string) => void;
   showRegistration: () => void;
+  handleRemoveKnownUser: (userIdToRemove: string) => void;
 
   // useStudyData'dan gelenler
   subjects: Subject[];

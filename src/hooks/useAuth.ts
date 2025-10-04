@@ -56,38 +56,23 @@ export const useAuth = (isMuted: boolean) => {
   }, [userId]);
 
   const handleRegistration = async () => {
-    // =================================================================
-    // DÜZELTME: Tüm giriş bilgilerini büyük harfe çevirerek standart hale getiriyoruz.
-    // =================================================================
     const finalName = tempName.trim().toUpperCase();
     const finalClassName = className.trim().toUpperCase();
-    const finalCoachCode = coachCode.trim().toUpperCase(); // Bu da artık büyük harf
+    const finalCoachCode = coachCode.trim().toUpperCase();
 
     if (!finalName || !finalClassName || !finalCoachCode) {
         toast.error("Lütfen tüm alanları doldurun.");
         return;
     }
     try {
-        const { data: coachData, error: coachError } = await supabase
-            .from('koclar')
-            .select('eposta')
-            .ilike('koc_kodu', finalCoachCode) // .ilike zaten harf duyarsızdır, ama tutarlılık iyidir.
-            .single();
-
+        const { data: coachData, error: coachError } = await supabase.from('koclar').select('eposta').ilike('koc_kodu', finalCoachCode).single();
         if (coachError || !coachData) {
             toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
             return;
         }
         const finalCoachEmail = coachData.eposta;
 
-        const { data: studentData, error: studentError } = await supabase
-            .from('ogrenciler')
-            .select('*')
-            .ilike('ad_soyad', finalName)
-            .ilike('sinif', finalClassName)
-            .ilike('koc_eposta', finalCoachEmail)
-            .single();
-            
+        const { data: studentData, error: studentError } = await supabase.from('ogrenciler').select('*').ilike('ad_soyad', finalName).ilike('sinif', finalClassName).ilike('koc_eposta', finalCoachEmail).single();
         if (studentError || !studentData) {
             toast.error("Bilgiler eşleşmedi. Ad, sınıf ve koç kodunu kontrol et.");
             return;
@@ -133,7 +118,7 @@ export const useAuth = (isMuted: boolean) => {
 
   const handleLogout = () => {
     storage.clearCurrentUserId();
-    window.location.reload();
+    window.location.href = '/';
   };
 
   const handleSwitchUser = (newUserId: string) => {
@@ -144,6 +129,18 @@ export const useAuth = (isMuted: boolean) => {
   const showRegistration = () => {
     setShowProfileSelector(false);
     setShowNameModal(true);
+  };
+
+  const handleRemoveKnownUser = (userIdToRemove: string) => {
+    if (userId === userIdToRemove) {
+      handleLogout();
+      return;
+    }
+    const updatedKnownUsers = knownUsers.filter(u => u.userId !== userIdToRemove);
+    storage.saveKnownUsers(updatedKnownUsers);
+    setKnownUsers(updatedKnownUsers);
+    storage.removeAllUserData(userIdToRemove);
+    toast.info("Profil cihazdan kaldırıldı.");
   };
 
   return {
@@ -165,5 +162,6 @@ export const useAuth = (isMuted: boolean) => {
     handleLogout,
     handleSwitchUser,
     showRegistration,
+    handleRemoveKnownUser,
   };
 };

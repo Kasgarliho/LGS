@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Question } from "@/types";
 import { questions as allQuestions } from "@/data/questions";
 import { useAppContext } from "./AppLayout";
@@ -8,12 +8,17 @@ import MotivationalQuote from "@/components/MotivationalQuote";
 import WordSwiper from "@/components/WordSwiper";
 import { Stopwatch } from "@/components/Stopwatch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Swords } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { dailyWords } from "@/data/dailywords";
 
-const PracticePage = () => {
+export default function PracticePage() {
   const [dailyQuestions, setDailyQuestions] = useState<Question[]>([]);
   const [isSolving, setIsSolving] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
-  
+  const navigate = useNavigate();
   const { handleQuizCompletion, subjects, dailySolvedSubjects } = useAppContext();
 
   const handleSelectSubject = (subjectId: string) => {
@@ -37,6 +42,10 @@ const PracticePage = () => {
     !dailySolvedSubjects.includes(s.id)
   );
 
+  const wordUnits = useMemo(() => {
+    return [...new Set(dailyWords.map(w => w.unit))].sort((a,b) => a-b);
+  }, []);
+
   if (isSolving) {
     return <QuestionSolver questions={dailyQuestions} subjects={subjects} onFinish={handleFinishSolving} onClose={() => setIsSolving(false)} />;
   }
@@ -44,20 +53,16 @@ const PracticePage = () => {
   return (
     <div className="p-4 space-y-6 animate-slide-up">
       <Tabs defaultValue="gunluk-gorev" className="w-full">
-        {/* SEKMELER (TABS) */}
-        {/* GÜNCELLENDİ: TabsList'in rengi daha belirgin bir hale getirildi */}
         <TabsList className="grid w-full grid-cols-3 bg-primary text-primary-foreground shadow-md">
           <TabsTrigger value="gunluk-gorev">Günlük Görev</TabsTrigger>
           <TabsTrigger value="kelime-ezberle">Kelime Ezberle</TabsTrigger>
           <TabsTrigger value="araclar">Araçlar</TabsTrigger>
         </TabsList>
 
-        {/* GÜNCELLENDİ: Özlü Söz artık tüm sekmelerin altında yer alıyor */}
         <div className="mt-4">
           <MotivationalQuote />
         </div>
 
-        {/* GÜNLÜK GÖREV SEKMESİ İÇERİĞİ */}
         <TabsContent value="gunluk-gorev" className="mt-4 space-y-6">
           <DailyQuestions 
             dailyQuestionsCount={36}
@@ -67,21 +72,31 @@ const PracticePage = () => {
           />
         </TabsContent>
 
-        {/* KELİME EZBERLE SEKMESİ İÇERİĞİ */}
-        <TabsContent value="kelime-ezberle" className="mt-4">
+        <TabsContent value="kelime-ezberle" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Swords /> Word Challenge
+              </CardTitle>
+              <CardDescription>Bilgini sına ve liderlik tablosunda yüksel!</CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4">
+              {wordUnits.map(unit => (
+                <Button key={unit} onClick={() => navigate(`/word-quiz/${unit}`)}>
+                  Ünite {unit} Testi
+                </Button>
+              ))}
+            </CardContent>
+          </Card>
           <WordSwiper />
         </TabsContent>
 
-        {/* ARAÇLAR SEKMESİ İÇERİĞİ */}
         <TabsContent value="araclar" className="mt-4">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Stopwatch />
-              {/* Buraya gelecekte başka bir araç daha eklenebilir */}
            </div>
         </TabsContent>
       </Tabs>
     </div>
   );
 };
-
-export default PracticePage;

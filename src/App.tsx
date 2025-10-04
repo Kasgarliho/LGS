@@ -21,6 +21,8 @@ import GecmisKayitlarSayfasi from "./pages/GecmisKayitlarSayfasi";
 import StudentDetailPage from "./pages/StudentDetailPage";
 import SchedulePage from "./pages/SchedulePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import WordQuizPage from "./pages/WordQuizPage";
+import ProfileSwitcher from "./components/ProfileSwitcher";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +52,7 @@ const studentRouter = createBrowserRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "gecmis", element: <GecmisKayitlarSayfasi /> },
       { path: "leaderboard", element: <LeaderboardPage /> },
+      { path: "word-quiz/:unitId", element: <WordQuizPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
@@ -65,6 +68,7 @@ const coachRouter = createBrowserRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "profile", element: <ProfilePage /> },
       { path: "leaderboard", element: <LeaderboardPage /> },
+      { path: "word-quiz/:unitId", element: <WordQuizPage /> },
       { path: "*", element: <Navigate to="/" replace /> },
     ],
   },
@@ -72,7 +76,7 @@ const coachRouter = createBrowserRouter([
 
 function AppController() {
   const auth = useAuth(false);
-  const { userId, userRole, authLoading, knownUsers, handleSwitchUser, showRegistration } = auth;
+  const { userId, userRole, authLoading, knownUsers, handleSwitchUser, showRegistration, handleRemoveKnownUser } = auth;
 
   if (authLoading) {
     return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Yükleniyor...</p></div>;
@@ -85,18 +89,21 @@ function AppController() {
           {knownUsers.length > 0 && !auth.showNameModal ? (
             <>
               <DialogHeader><DialogTitle className="text-2xl">Profil Seç</DialogTitle><DialogDescription>Devam etmek için bir profil seç veya yeni bir hesapla giriş yap.</DialogDescription></DialogHeader>
-              <div className="py-4 space-y-2">
-                {knownUsers.map(user => (<Button key={user.userId} variant="outline" className="w-full justify-start" onClick={() => handleSwitchUser(user.userId)}>{user.userName}</Button>))}
-                <Button className="w-full mt-4" onClick={showRegistration}>Yeni Hesapla Giriş Yap</Button>
-              </div>
+              <ProfileSwitcher 
+                knownUsers={knownUsers}
+                activeUserId={userId}
+                onSwitch={handleSwitchUser}
+                onRemove={handleRemoveKnownUser}
+                onAddNew={showRegistration}
+              />
             </>
           ) : (
             <>
               <DialogHeader><DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle><DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription></DialogHeader>
               <div className="py-4 space-y-4">
-                <Input placeholder="Adın Soyadın(Tümü Büyük))" value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
+                <Input placeholder="Adın Soyadın..." value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
                 <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
-                <Input placeholder="Koç Kodu(Coşkun Hoca" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
+                <Input placeholder="Koç Kodu" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && auth.handleRegistration()} />
                 <Button onClick={auth.handleRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
                 {knownUsers.length > 0 && (<Button variant="ghost" className="w-full" onClick={() => auth.setShowNameModal(false)}>Geri</Button>)}
               </div>

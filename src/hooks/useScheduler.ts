@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { storage, NotificationSettings } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -7,13 +7,11 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { subjects as allSubjectsData } from '@/data/subjects';
 
 const weekDaysForLookup = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
+const CHALLENGE_NOTIFICATION_ID = 999; // Bildirimi iptal edebilmek için sabit bir ID
 
 export const useScheduler = (userId: string | null, isInitialized: boolean) => {
-  // Cihaza özel ayarlar (kullanıcıdan bağımsız)
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(storage.loadNotificationSettings());
   const [manualSchedule, setManualSchedule] = useState<ManualSchedule | null>(storage.loadManualSchedule());
-  
-  // Kullanıcıya özel ayarlar
   const [customPlan, setCustomPlan] = useState<CustomStudyPlan | null>(null);
 
   const tomorrowSubjects = useMemo(() => {
@@ -34,12 +32,10 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
   };
   
   useEffect(() => {
-    // Cihaza özel ayarlar her zaman yüklenir
     setNotificationSettings(storage.loadNotificationSettings());
     setManualSchedule(storage.loadManualSchedule());
 
     if(userId) {
-       // Kullanıcıya özel 'customPlan' hem lokalden hem buluttan yüklenir
        setCustomPlan(storage.loadCustomStudyPlan(userId));
        supabase
         .from('kullanicilar')
@@ -52,10 +48,39 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
           }
         });
     } else {
-        // Kullanıcı yoksa, customPlan'ı temizle
         setCustomPlan(null);
     }
   }, [userId]);
+
+  // YENİ: Meydan okuma bildirimini kuran useEffect
+  useEffect(() => {
+    const scheduleChallengeNotification = async () => {
+      // Önceki meydan okuma bildirimini her zaman iptal et
+      await LocalNotifications.cancel({ notifications: [{ id: CHALLENGE_NOTIFICATION_ID }] });
+
+      // Eğer ayar açıksa, 3 gün sonrasına yeni bir bildirim kur
+      if (notificationSettings.challengeReminder) {
+        const scheduleDate = new Date();
+        scheduleDate.setDate(scheduleDate.getDate() + 3);
+        scheduleDate.setHours(18, 0, 0, 0); // Akşam 6'da gönderilsin
+
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: CHALLENGE_NOTIFICATION_ID,
+            title: "LGS Asistanı Seni Bekliyor! 💪",
+            body: "Var mısın bir meydan okumaya? Yeni kelimeler ve sorular seni bekliyor!",
+            schedule: { at: scheduleDate },
+          }]
+        });
+      }
+    };
+
+    // Uygulama başlatıldığında ve kullanıcı giriş yaptığında çalıştır
+    if (isInitialized && userId) {
+      scheduleChallengeNotification();
+    }
+  }, [isInitialized, userId, notificationSettings.challengeReminder]);
+
 
   useEffect(() => { if (isInitialized) storage.saveNotificationSettings(notificationSettings); }, [notificationSettings, isInitialized]);
   useEffect(() => { if (isInitialized && manualSchedule) storage.saveManualSchedule(manualSchedule); }, [manualSchedule, isInitialized]);
@@ -63,9 +88,7 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
 
   const handleUpdateNotificationSettings = (settings: NotificationSettings) => setNotificationSettings(settings);
   
-  const handleUpdateManualSchedule = (schedule: ManualSchedule) => {
-    setManualSchedule(schedule);
-  };
+  const handleUpdateManualSchedule = (schedule: ManualSchedule) => setManualSchedule(schedule);
   
   const getSubjectName = (subjectId: string) => allSubjectsData.find(s => s.id === subjectId)?.name || subjectId;
 

@@ -1,4 +1,12 @@
-import { Subject, StudySession, Achievement, ManualSchedule, UserAvatars, LearnedWords, CustomStudyPlan, NotificationSettings } from '@/types';
+import { Subject, StudySession, Achievement, ManualSchedule, UserAvatars, LearnedWords, CustomStudyPlan, KnownUser } from '@/types';
+
+// YENİ: NotificationSettings tipi dışa aktarılıyor ve challengeReminder eklendi
+export interface NotificationSettings {
+  studyPlanReminder: { enabled: boolean; minutesBefore: number };
+  bagReminder: { enabled: boolean; hour: number; minute: number };
+  streakReminder: boolean;
+  challengeReminder: boolean;
+}
 
 const BASE_KEYS = {
   THEME: 'theme',
@@ -24,11 +32,6 @@ const KNOWN_USERS_KEY = 'lgs_app_known_users';
 
 const createKey = (userId: string, baseKey: string) => `lgs_app_${userId}_${baseKey}`;
 const createGlobalKey = (baseKey: string) => `lgs_app_${baseKey}`;
-
-export interface KnownUser {
-  userId: string;
-  userName: string;
-}
 
 export const storage = {
   saveCurrentUserId: (userId: string) => localStorage.setItem(CURRENT_USER_ID_KEY, userId),
@@ -128,15 +131,18 @@ export const storage = {
   },
   saveManualSchedule: (schedule: ManualSchedule) => localStorage.setItem(createGlobalKey(BASE_KEYS.MANUAL_SCHEDULE), JSON.stringify(schedule)),
   
+  // YENİ: Varsayılan ayarlara challengeReminder eklendi
   loadNotificationSettings: (): NotificationSettings => {
     const data = localStorage.getItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS));
     const defaults: NotificationSettings = {
       studyPlanReminder: { enabled: true, minutesBefore: 15 },
       bagReminder: { enabled: true, hour: 20, minute: 0 },
-      streakReminder: true
+      streakReminder: true,
+      challengeReminder: true, // Yeni ayar
     };
     if (data) {
       const parsed = JSON.parse(data);
+      // Kayıtlı ayarlarla varsayılanları birleştir
       return {
         ...defaults,
         ...parsed,
@@ -147,6 +153,12 @@ export const storage = {
     return defaults;
   },
   saveNotificationSettings: (settings: NotificationSettings) => localStorage.setItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS), JSON.stringify(settings)),
-};
 
-export type { NotificationSettings };
+  removeAllUserData: (userId: string) => {
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith(`lgs_app_${userId}_`)) {
+        localStorage.removeItem(key);
+      }
+    });
+  }
+};
