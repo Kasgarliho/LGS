@@ -19,6 +19,8 @@ export interface StudySession {
   questionsCompleted: number;
   date: Date;
   topic: string;
+  correctCount?: number;
+  incorrectCount?: number;
 }
 
 export interface Achievement {
@@ -68,10 +70,11 @@ export interface DailyWordData {
   exampleMeaning: string;
 }
 
-// YENİ EKLENEN TİPLER
 export type StudyType = 'Konu Tekrarı' | 'Soru Çözme' | 'Test Çözme' | 'Ödev' | 'Diğer';
 
 export interface StudyPlanEntry {
+  id: string;
+  notificationId?: number;
   day: string;
   timeRange: string;
   subjectId: string;
@@ -81,4 +84,37 @@ export interface StudyPlanEntry {
 
 export interface CustomStudyPlan {
   [day: string]: StudyPlanEntry[];
+}
+
+export interface KnownUser {
+  userId: string;
+  userName: string;
+}
+
+export interface SolvedStat {
+  subjectId: string;
+  topic: string;
+  correct: boolean;
+}
+
+// YENİ EKLENEN MEYDAN OKUMA TİPLERİ
+export interface ChallengeOpponent {
+  user_id: string;
+  user_name: string;
+  user_avatar: UserAvatars; 
+}
+
+export interface Challenge {
+  id: string;
+  challenger_id: string;
+  opponent_id: string;
+  unit_id: number;
+  challenger_score: number;
+  challenger_time_seconds: number;
+  opponent_score?: number;
+  opponent_time_seconds?: number;
+  status: 'pending' | 'completed' | 'declined';
+  created_at: string;
+  challenger_name?: string; 
+  opponent_name?: string;
 }

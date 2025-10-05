@@ -2,13 +2,15 @@ import { Outlet, useOutletContext, useLocation, useNavigate } from "react-router
 import { useState, useEffect } from "react";
 import { storage } from "@/utils/storage";
 import { toast } from 'sonner';
-import { AppContextType, SolvedStat } from '@/types';
+import { AppContextType, SolvedStat, Challenge } from '@/types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playFailSound } from '@/utils/sounds';
 import { App } from '@capacitor/app';
+import { supabase } from "@/supabaseClient";
 
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
+import ChallengeNotification from "@/components/ChallengeNotification"; // YENİ
 import { useAuth } from '@/hooks/useAuth';
 import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
@@ -18,12 +20,12 @@ export default function AppLayout() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMuted, setIsMuted] = useState(() => storage.loadIsMuted());
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
+  const [pendingChallenges, setPendingChallenges] = useState<Challenge[]>([]); // YENİ
 
   const location = useLocation();
   const navigate = useNavigate();
   const isHomePage = location.pathname === '/';
 
-  // Auth hook'unu context için hala kullanıyoruz
   const auth = useAuth(isMuted);
   const { userId, userName, userRole } = auth;
 
@@ -39,6 +41,31 @@ export default function AppLayout() {
     }
   });
   const scheduler = useScheduler(userId, isInitialized);
+
+  // YENİ: Meydan okumaları çeken useEffect
+  useEffect(() => {
+    const fetchChallenges = async () => {
+      if (!userId) return;
+      const { data, error } = await supabase.rpc('get_pending_challenges', { p_user_id: userId });
+      if (error) {
+        console.error("Meydan okumalar çekilirken hata:", error);
+      } else if (data) {
+        setPendingChallenges(data);
+      }
+    };
+    fetchChallenges();
+    // Supabase Realtime ile yeni meydan okumaları dinle (opsiyonel ama çok daha iyi)
+    const channel = supabase.channel('challenges')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'challenges', filter: `opponent_id=eq.${userId}` }, 
+        (payload) => {
+          fetchChallenges(); // Yeni bir meydan okuma geldiğinde listeyi yenile
+        }
+      ).subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
@@ -141,6 +168,11 @@ export default function AppLayout() {
   const handleEnglishUnitUnlocked = () => {
     coreData.checkAchievements(studyData.subjects, { type: 'english_unit' });
   };
+  
+  // YENİ: Bildirim kapatıldığında listeden kaldırma fonksiyonu
+  const dismissChallenge = (challengeId: string) => {
+    setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
+  };
 
   const totalQuestions = studyData.subjects.reduce((sum, s) => sum + s.correct + s.incorrect, 0);
   const unlockedAchievements = coreData.achievements.filter(a => a.unlocked).length;
@@ -154,6 +186,8 @@ export default function AppLayout() {
     handleEnglishUnitUnlocked,
     isMuted,
     toggleMute,
+    pendingChallenges,    // YENİ
+    dismissChallenge,     // YENİ
   };
 
   return (
@@ -175,6 +209,8 @@ export default function AppLayout() {
             userRole={userRole}
           />
           <main>
+            {/* YENİ: Bildirim bileşeni eklendi */}
+            <ChallengeNotification challenges={pendingChallenges} onDismiss={dismissChallenge} />
             <div className="animate-slide-up">
               <Outlet context={contextValue} />
             </div>
