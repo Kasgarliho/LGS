@@ -28,13 +28,16 @@ const LgsCountdown = () => {
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
+  // DÜZELTME: useEffect artık sadece bileşen ilk yüklendiğinde çalışacak
+  // ve her saniye kendini tekrar render etmeyecek.
   useEffect(() => {
-    const timer = setTimeout(() => {
+    const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
 
-    return () => clearTimeout(timer);
-  });
+    // Bileşen ekrandan kaldırıldığında zamanlayıcıyı temizle
+    return () => clearInterval(timer);
+  }, []); // Boş dependency array, bu etkinin sadece bir kez çalışmasını sağlar
 
   return (
     <Card className="shadow-lg border-primary/20 bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
