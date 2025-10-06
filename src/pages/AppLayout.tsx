@@ -2,7 +2,7 @@ import { Outlet, useOutletContext, useLocation, useNavigate } from "react-router
 import { useState, useEffect } from "react";
 import { storage } from "@/utils/storage";
 import { toast } from 'sonner';
-import { AppContextType, SolvedStat, Challenge } from '@/types';
+import { SolvedStat, Challenge } from '@/types'; // AppContextType buradan kaldırıldı
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playFailSound } from '@/utils/sounds';
 import { App } from '@capacitor/app';
@@ -10,17 +10,32 @@ import { supabase } from "@/supabaseClient";
 
 import Header from '@/components/Header';
 import BottomNav from '@/components/BottomNav';
-import ChallengeNotification from "@/components/ChallengeNotification"; // YENİ
+import ChallengeNotification from "@/components/ChallengeNotification";
 import { useAuth } from '@/hooks/useAuth';
 import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
 import { useScheduler } from '@/hooks/useScheduler';
 
+// DÜZELTME: AppContextType tanımı, ait olduğu bu dosyaya taşındı.
+type AppContextType =
+  ReturnType<typeof useAuth> &
+  ReturnType<typeof useCoreData> &
+  ReturnType<typeof useStudyData> &
+  ReturnType<typeof useScheduler> &
+  {
+    handleQuizCompletion: (solvedStats: SolvedStat[], subjectId: string) => Promise<void>;
+    handleEnglishUnitUnlocked: () => void;
+    isMuted: boolean;
+    toggleMute: () => void;
+    pendingChallenges: Challenge[];
+    dismissChallenge: (challengeId: string) => void;
+  };
+
 export default function AppLayout() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isMuted, setIsMuted] = useState(() => storage.loadIsMuted());
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
-  const [pendingChallenges, setPendingChallenges] = useState<Challenge[]>([]); // YENİ
+  const [pendingChallenges, setPendingChallenges] = useState<Challenge[]>([]);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,7 +57,6 @@ export default function AppLayout() {
   });
   const scheduler = useScheduler(userId, isInitialized);
 
-  // YENİ: Meydan okumaları çeken useEffect
   useEffect(() => {
     const fetchChallenges = async () => {
       if (!userId) return;
@@ -54,11 +68,10 @@ export default function AppLayout() {
       }
     };
     fetchChallenges();
-    // Supabase Realtime ile yeni meydan okumaları dinle (opsiyonel ama çok daha iyi)
     const channel = supabase.channel('challenges')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'challenges', filter: `opponent_id=eq.${userId}` }, 
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'challenges', filter: `opponent_id=eq.${userId}` },
         (payload) => {
-          fetchChallenges(); // Yeni bir meydan okuma geldiğinde listeyi yenile
+          fetchChallenges();
         }
       ).subscribe();
 
@@ -169,7 +182,6 @@ export default function AppLayout() {
     coreData.checkAchievements(studyData.subjects, { type: 'english_unit' });
   };
   
-  // YENİ: Bildirim kapatıldığında listeden kaldırma fonksiyonu
   const dismissChallenge = (challengeId: string) => {
     setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
   };
@@ -186,8 +198,8 @@ export default function AppLayout() {
     handleEnglishUnitUnlocked,
     isMuted,
     toggleMute,
-    pendingChallenges,    // YENİ
-    dismissChallenge,     // YENİ
+    pendingChallenges,
+    dismissChallenge,
   };
 
   return (
@@ -209,7 +221,6 @@ export default function AppLayout() {
             userRole={userRole}
           />
           <main>
-            {/* YENİ: Bildirim bileşeni eklendi */}
             <ChallengeNotification challenges={pendingChallenges} onDismiss={dismissChallenge} />
             <div className="animate-slide-up">
               <Outlet context={contextValue} />

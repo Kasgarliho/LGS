@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Question, Subject, SolvedStat } from "@/types";
+import { Question, Subject, SolvedStat } from "@/types"; // SolvedStat artık sadece @/types'tan geliyor
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ interface QuestionSolverProps {
   onFinish: (solvedStats: SolvedStat[]) => void;
   onClose: () => void;
 }
+
+// DÜZELTME: Gereksiz olan SolvedStat tanımı buradan kaldırıldı.
 
 export default function QuestionSolver({ questions, subjects, onFinish, onClose }: QuestionSolverProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);

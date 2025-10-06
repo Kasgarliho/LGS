@@ -8,15 +8,15 @@ import { useAppContext } from './AppLayout';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
 import { ChallengeDialog } from '@/components/ChallengeDialog';
-import { Swords } from 'lucide-react';
+import { Swords, Trophy, Shield, User, Clock } from 'lucide-react';
+import { Challenge } from '@/types';
 
 export default function WordQuizPage() {
   const { unitId } = useParams<{ unitId: string }>();
   const navigate = useNavigate();
-  const location = useLocation(); // YENİ
-  const context = useAppContext();
-
-  // YENİ: Meydan okuma ID'sini state'ten al
+  const location = useLocation();
+  const { dismissChallenge } = useAppContext();
+  
   const challengeId = location.state?.challengeId;
 
   const [questions, setQuestions] = useState<any[]>([]);
@@ -26,11 +26,11 @@ export default function WordQuizPage() {
   const [correctCount, setCorrectCount] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [isFinished, setIsFinished] = useState(false);
-  
   const [showChallengeDialog, setShowChallengeDialog] = useState(false);
   const [finalTime, setFinalTime] = useState(0);
 
-  const userId = context?.userId;
+  // YENİ: Meydan okuma sonuçlarını tutmak için state
+  const [challengeResult, setChallengeResult] = useState<Challenge | null>(null);
 
   useEffect(() => {
     const numericUnitId = parseInt(unitId || '1');
@@ -40,42 +40,32 @@ export default function WordQuizPage() {
       navigate('/practice');
       return;
     }
-
     const shuffled = [...unitWords].sort(() => 0.5 - Math.random());
     const quizWords = shuffled;
-
     const generatedQuestions = quizWords.map(correctWord => {
       const otherWordsInUnit = shuffled.filter(w => w.id !== correctWord.id);
       let wrongOptionsPool = otherWordsInUnit;
       if (wrongOptionsPool.length < 3) {
         wrongOptionsPool = [...wrongOptionsPool, ...dailyWords.filter(w => w.unit !== numericUnitId)];
       }
-      const wrongOptions = wrongOptionsPool
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 3)
-        .map(w => w.meaning);
+      const wrongOptions = wrongOptionsPool.sort(() => 0.5 - Math.random()).slice(0, 3).map(w => w.meaning);
       const options = [...wrongOptions, correctWord.meaning].sort(() => 0.5 - Math.random());
-      
-      return {
-        word: correctWord.word,
-        correctMeaning: correctWord.meaning,
-        options,
-      };
+      return { word: correctWord.word, correctMeaning: correctWord.meaning, options };
     });
-
     setQuestions(generatedQuestions);
     setStartTime(Date.now());
   }, [unitId, navigate]);
 
-  const handleAnswerClick = (option: string) => {
+  const handleAnswerClick = async (option: string) => {
     if (showResult) return;
     setSelectedAnswer(option);
-    if (option === questions[currentQuestionIndex].correctMeaning) {
+    const isCorrectNow = option === questions[currentQuestionIndex].correctMeaning;
+    if (isCorrectNow) {
       setCorrectCount(prev => prev + 1);
     }
     setShowResult(true);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       if (currentQuestionIndex < questions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
         setSelectedAnswer(null);
@@ -84,32 +74,77 @@ export default function WordQuizPage() {
         const endTime = Date.now();
         const timeTaken = Math.round((endTime - startTime) / 1000);
         setFinalTime(timeTaken);
-
-        // YENİ: Eğer bu bir meydan okuma ise, sonucu veritabanına işle
-        if (challengeId) {
-            supabase.from('challenges').update({
-                opponent_score: correctCount + (option === questions[currentQuestionIndex].correctMeaning ? 1 : 0),
-                opponent_time_seconds: timeTaken,
-                status: 'completed',
-                completed_at: new Date().toISOString()
-            }).eq('id', challengeId).then(({ error }) => {
-                if (error) {
-                    toast.error("Meydan okuma sonucu kaydedilemedi.");
-                } else {
-                    toast.success("Meydan okuma tamamlandı! Sonuç rakibine iletildi.");
-                    context.dismissChallenge(challengeId);
-                }
-            });
-        }
         
+        const finalCorrectCount = correctCount + (isCorrectNow ? 1 : 0) - (isCorrectNow && selectedAnswer !== null ? 0 : 1);
+
+
+        if (challengeId) {
+          const { data, error } = await supabase.from('challenges').update({
+            opponent_score: finalCorrectCount,
+            opponent_time_seconds: timeTaken,
+            status: 'completed',
+            completed_at: new Date().toISOString()
+          }).eq('id', challengeId).select(`*, challenger:challenger_id(ad_soyad), opponent:opponent_id(ad_soyad)`).single();
+          
+          if (error) {
+            toast.error("Meydan okuma sonucu kaydedilemedi.");
+          } else {
+            toast.success("Meydan okuma tamamlandı! Sonuçlar gösteriliyor.");
+            setChallengeResult({
+                ...data,
+                challenger_name: data.challenger.ad_soyad,
+                opponent_name: data.opponent.ad_soyad,
+            });
+            dismissChallenge(challengeId);
+          }
+        }
         setIsFinished(true);
       }
     }, 400);
   };
   
+  // GÜNCELLENDİ: Sonuç ekranı artık 3 farklı durum gösteriyor
   if (isFinished) {
-    const score = correctCount;
+    // Durum 1: Meydan okuma tamamlandı ve sonuçlar hazır
+    if (challengeResult) {
+        const myScore = challengeResult.opponent_score ?? 0;
+        const theirScore = challengeResult.challenger_score;
+        const myTime = challengeResult.opponent_time_seconds ?? 0;
+        const theirTime = challengeResult.challenger_time_seconds;
+        const iAmWinner = (myScore > theirScore) || (myScore === theirScore && myTime < theirTime);
 
+        return (
+            <div className="text-center p-4 animate-slide-up">
+                <Card className={`max-w-md mx-auto ${iAmWinner ? 'border-green-500' : 'border-red-500'}`}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-2">
+                           {iAmWinner ? <Trophy className="h-6 w-6 text-yellow-500" /> : <Shield className="h-6 w-6 text-red-500" />}
+                           {iAmWinner ? "Kazandın!" : "Kaybettin"}
+                        </CardTitle>
+                        <CardDescription>Meydan okuma sonucu</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                            <div className="space-y-1 p-2 bg-muted/50 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center gap-1"><User className="h-4 w-4" /> Sen</p>
+                                <p className="text-2xl font-bold">{myScore} <span className="text-base font-normal text-muted-foreground">doğru</span></p>
+                                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1"><Clock className="h-3 w-3" /> {myTime} sn</p>
+                            </div>
+                            <div className="space-y-1 p-2 bg-muted/50 rounded-lg">
+                                <p className="text-sm font-medium flex items-center justify-center gap-1"><User className="h-4 w-4" /> {challengeResult.challenger_name}</p>
+                                <p className="text-2xl font-bold">{theirScore} <span className="text-base font-normal text-muted-foreground">doğru</span></p>
+                                <p className="text-sm text-muted-foreground flex items-center justify-center gap-1"><Clock className="h-3 w-3" /> {theirTime} sn</p>
+                            </div>
+                        </div>
+                        <Button onClick={() => navigate('/practice')} className="w-full">Geri Dön</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    // Durum 2: Normal test tamamlandı
+    const score = correctCount;
     return (
         <>
           <div className="text-center p-4 animate-slide-up">
@@ -121,48 +156,24 @@ export default function WordQuizPage() {
                   <CardContent className="space-y-4">
                       <p className="text-2xl font-bold">Skorun: {score * 10}</p>
                       <div className="grid grid-cols-3 text-center">
-                        <div>
-                          <p className="font-bold text-lg text-green-500">{correctCount}</p>
-                          <p className="text-sm text-muted-foreground">Doğru</p>
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg text-red-500">{questions.length - correctCount}</p>
-                          <p className="text-sm text-muted-foreground">Yanlış</p>
-                        </div>
-                        <div>
-                          <p className="font-bold text-lg">{finalTime} sn</p>
-                          <p className="text-sm text-muted-foreground">Süre</p>
-                        </div>
+                        <div><p className="font-bold text-lg text-green-500">{correctCount}</p><p className="text-sm text-muted-foreground">Doğru</p></div>
+                        <div><p className="font-bold text-lg text-red-500">{questions.length - correctCount}</p><p className="text-sm text-muted-foreground">Yanlış</p></div>
+                        <div><p className="font-bold text-lg">{finalTime} sn</p><p className="text-sm text-muted-foreground">Süre</p></div>
                       </div>
-                      {/* Meydan okuma değilse bu butonu göster */}
-                      {!challengeId && (
-                        <Button onClick={() => setShowChallengeDialog(true)} className="w-full" variant="outline">
-                          <Swords className="h-4 w-4 mr-2" />
-                          Bir Arkadaşına Meydan Oku
-                        </Button>
-                      )}
+                      {!challengeId && (<Button onClick={() => setShowChallengeDialog(true)} className="w-full" variant="outline"><Swords className="h-4 w-4 mr-2" />Bir Arkadaşına Meydan Oku</Button>)}
                       <Button onClick={() => navigate('/practice')} className="w-full">Geri Dön</Button>
                   </CardContent>
               </Card>
           </div>
-          <ChallengeDialog 
-            open={showChallengeDialog}
-            onOpenChange={setShowChallengeDialog}
-            unitId={parseInt(unitId || '1')}
-            score={score}
-            time={finalTime}
-          />
+          <ChallengeDialog open={showChallengeDialog} onOpenChange={setShowChallengeDialog} unitId={parseInt(unitId || '1')} score={score} time={finalTime} />
         </>
     );
   }
 
-  if (questions.length === 0) {
-    return <div>Test yükleniyor...</div>;
-  }
-  
+  // Durum 3: Test devam ediyor
+  if (questions.length === 0) return <div>Test yükleniyor...</div>;
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-
   return (
     <div className="p-4 animate-slide-up">
       <Card className="max-w-2xl mx-auto">
@@ -175,24 +186,9 @@ export default function WordQuizPage() {
             {currentQuestion.options.map((option: string, index: number) => {
                 const isSelected = selectedAnswer === option;
                 const isCorrect = currentQuestion.correctMeaning === option;
-                
                 let buttonVariant: "default" | "secondary" | "destructive" | "success" = "secondary";
-                if(showResult) {
-                    if(isCorrect) buttonVariant = "success";
-                    else if (isSelected && !isCorrect) buttonVariant = "destructive";
-                }
-
-                return (
-                    <Button
-                        key={index}
-                        variant={buttonVariant}
-                        className="h-24 text-lg text-wrap"
-                        onClick={() => handleAnswerClick(option)}
-                        disabled={showResult}
-                    >
-                        {option}
-                    </Button>
-                )
+                if(showResult) { if(isCorrect) buttonVariant = "success"; else if (isSelected && !isCorrect) buttonVariant = "destructive"; }
+                return (<Button key={index} variant={buttonVariant} className="h-24 text-lg text-wrap" onClick={() => handleAnswerClick(option)} disabled={showResult}>{option}</Button>)
             })}
         </CardContent>
       </Card>

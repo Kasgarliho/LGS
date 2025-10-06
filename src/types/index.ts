@@ -1,5 +1,8 @@
 // src/types/index.ts
 
+// Bu dosya sadece saf tip tanımlamaları içerir.
+// Herhangi bir yerden import yapmaz.
+
 export interface Subject {
   topics: any;
   id: string;
@@ -30,7 +33,7 @@ export interface Achievement {
   icon: string;
   unlocked: boolean;
   unlockedAt?: Date;
-  category: 'questions' | 'streak' | 'subject' | 'special'; 
+  category: 'questions' | 'streak' | 'subject' | 'special';
   requiredSubjectId?: string;
   requiredQuestions?: number;
   requirement?: string;
@@ -97,11 +100,10 @@ export interface SolvedStat {
   correct: boolean;
 }
 
-// YENİ EKLENEN MEYDAN OKUMA TİPLERİ
 export interface ChallengeOpponent {
   user_id: string;
   user_name: string;
-  user_avatar: UserAvatars; 
+  user_avatar: UserAvatars;
 }
 
 export interface Challenge {
@@ -115,6 +117,9 @@ export interface Challenge {
   opponent_time_seconds?: number;
   status: 'pending' | 'completed' | 'declined';
   created_at: string;
-  challenger_name?: string; 
+  challenger_name?: string;
   opponent_name?: string;
 }
+
+// AppContextType tanımı, döngüsel bağımlılığı önlemek için AppLayout.tsx dosyasına taşındı.
+// Bu dosyada yer almamalıdır.

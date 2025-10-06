@@ -9,7 +9,7 @@ import { playPurchaseSound, playConfirmSound, playFailSound } from "@/utils/soun
 
 export const useCoreData = (
   userId: string | null,
-  userRole: string | null, // YENİ: userRole parametresi eklendi
+  userRole: string | null,
   isInitialized: boolean,
   isMuted: boolean
 ) => {
@@ -18,6 +18,7 @@ export const useCoreData = (
   const [streakFreezes, setStreakFreezes] = useState(0);
   const [achievements, setAchievements] = useState<Achievement[]>(initialAchievementsData);
   const [userAvatars, setUserAvatars] = useState<UserAvatars>({ current: 'default', unlocked: ['default'] });
+  const [challengeWins, setChallengeWins] = useState(0); // YENİ: Galibiyet sayısı state'i
   const [isCloudDataLoaded, setIsCloudDataLoaded] = useState(false);
 
   const updateUserCloudData = async (dataToUpdate: object) => {
@@ -39,11 +40,18 @@ export const useCoreData = (
     
     if (userId) {
       const fetchCoreData = async () => {
-        const { data: cloudData, error } = await supabase
-          .from('kullanicilar')
-          .select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar')
-          .eq('id', userId)
-          .maybeSingle();
+        // İki isteği aynı anda gönder
+        const [cloudDataRes, winsDataRes] = await Promise.all([
+          supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar').eq('id', userId).maybeSingle(),
+          supabase.rpc('get_challenge_win_count', { p_user_id: userId }) // YENİ: Galibiyet sayısını çek
+        ]);
+
+        const { data: cloudData, error } = cloudDataRes;
+        
+        // YENİ: Galibiyet sayısını state'e ata
+        if (winsDataRes.data) {
+          setChallengeWins(winsDataRes.data);
+        }
 
         if (error || !cloudData) {
           setTotalPoints(storage.loadPoints(userId));
@@ -73,6 +81,7 @@ export const useCoreData = (
       setTotalPoints(0);
       setStreak(0);
       setStreakFreezes(0);
+      setChallengeWins(0); // YENİ
       setUserAvatars({ current: 'default', unlocked: ['default'] });
       setAchievements(initialAchievementsData);
       setIsCloudDataLoaded(true);
@@ -80,7 +89,7 @@ export const useCoreData = (
   }, [userId, userRole]);
   
   useEffect(() => {
-    if (userRole === 'koç') return; // Koçların başarım kazanmasına gerek yok
+    if (userRole === 'koç') return;
     if (!isInitialized || !userId || achievements.length === 0) return;
     
     const unlockedAchievements = achievements.filter(a => a.unlocked);
@@ -202,6 +211,7 @@ export const useCoreData = (
     streakFreezes, setStreakFreezes,
     achievements,
     userAvatars,
+    challengeWins, // YENİ
     handleBuyStreakFreeze,
     handleBuyAvatar,
     handleSetAvatar,

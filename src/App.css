@@ -1,3 +1,5 @@
+/* Dosya Yolu: src/App.css */
+
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -23,7 +25,7 @@
     transform: rotate(0deg);
   }
   to {
-    transform: rotate(360deg);
+    transform: rotate(306deg);
   }
 }
 
@@ -39,4 +41,40 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* === YENİ EKLENEN ROZET VE ÜNİTE KARTI STİLLERİ === */
+
+/* Ünite testlerini içeren ana kapsayıcı */
+.unit-tests-grid {
+    position: relative; /* Bu, rozetin konumlanması için gereklidir */
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 sütunlu görünüm */
+    gap: 16px; /* Butonlar arası boşluk */
+    padding: 20px;
+    background-color: #1a1a2e; /* Koyu tema için bir arka plan */
+    border-radius: 12px;
+}
+
+/* Sağ üste yerleşen rozet */
+.challenge-badge-overlay {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 65px;
+    height: 65px;
+    z-index: 10;
+}
+
+/* Ünite butonları için örnek bir stil */
+.unit-button {
+    background-color: #8e44ad;
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: none;
+    text-align: center;
+    font-size: 1em;
+    font-weight: 700;
+    cursor: pointer;
 }
