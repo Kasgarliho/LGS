@@ -162,3 +162,5 @@ export const storage = {
     });
   }
 };
+
+export type { KnownUser };

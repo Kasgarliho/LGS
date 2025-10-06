@@ -2,19 +2,18 @@
 
 import SubjectCard from '@/components/SubjectCard';
 import DailyQuote from '@/components/ui/DailyQuote';
+import LgsCountdown from '@/components/ui/LgsCountdown';
 import { useAppContext } from '@/pages/AppLayout';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Briefcase } from 'lucide-react';
 
 const Index = () => {
-  // Zaman kontrolü için olan useState ve useEffect kaldırıldı.
-  // Veriler doğrudan context'ten alınıyor.
   const { subjects, handleAddQuestions, tomorrowSubjects, isEvening } = useAppContext();
 
   return (
     <div className="space-y-6">
-      {/* Yanıp sönen çanta hatırlatma kartı */}
-      {/* Koşul, artık doğrudan context'ten gelen 'isEvening'e bağlı */}
+      <LgsCountdown />
+
       {isEvening && tomorrowSubjects.length > 0 && (
         <div className="animate-pulse">
           <Card className="card-canli gradient-turuncu shadow-lg border-none">

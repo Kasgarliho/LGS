@@ -1,5 +1,3 @@
-/* Dosya Yolu: src/App.css */
-
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -25,7 +23,7 @@
     transform: rotate(0deg);
   }
   to {
-    transform: rotate(306deg);
+    transform: rotate(360deg);
   }
 }
 
@@ -43,27 +41,34 @@
   color: #888;
 }
 
-/* === YENİ EKLENEN ROZET VE ÜNİTE KARTI STİLLERİ === */
+/* === GÜNCELLENMİŞ STİLLER === */
 
-/* Ünite testlerini içeren ana kapsayıcı */
-.unit-tests-grid {
-    position: relative; /* Bu, rozetin konumlanması için gereklidir */
-    display: grid;
-    grid-template-columns: repeat(2, 1fr); /* 2 sütunlu görünüm */
-    gap: 16px; /* Butonlar arası boşluk */
-    padding: 20px;
-    background-color: #1a1a2e; /* Koyu tema için bir arka plan */
+.word-challenge-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    background-color: #1a1a2e;
     border-radius: 12px;
 }
 
-/* Sağ üste yerleşen rozet */
-.challenge-badge-overlay {
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    width: 65px;
-    height: 65px;
-    z-index: 10;
+/* DÜZELTME: Bu bloğu da flex container yapıp içindekileri ortalıyoruz */
+.word-challenge-header-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.word-challenge-header-text h2 {
+    margin-bottom: 4px;
+}
+
+/* DÜZELTME: Bu bloğu da flex container yapıp içindekileri ortalıyoruz */
+.word-challenge-header-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Ünite butonları için örnek bir stil */

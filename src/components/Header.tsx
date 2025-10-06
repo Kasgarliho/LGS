@@ -18,13 +18,13 @@ interface HeaderProps {
   userRole: string | null;
 }
 
-export default function Header({ 
-  userName, 
-  totalQuestions, 
-  streak, 
+export default function Header({
+  userName,
+  totalQuestions,
+  streak,
   unlockedAchievements,
   totalPoints,
-  theme, 
+  theme,
   toggleTheme,
   currentAvatarId,
   isMuted,
@@ -32,18 +32,18 @@ export default function Header({
   isHomePage,
   userRole
 }: HeaderProps) {
-  
+
   const currentAvatar = avatars.find(a => a.id === currentAvatarId) || avatars[0];
   const firstName = userName ? userName.split(' ')[0] : 'Misafir';
-  
+
   const renderHeaderContent = () => (
     <div className="flex items-center justify-between p-3 md:p-4 rounded-xl shadow-card bg-card">
       <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
         <Link to="/profile">
-          <img 
-            src={currentAvatar.image} 
-            alt="Kullanıcı Avatarı" 
-            className="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-primary/50 shadow-md transition-transform duration-300 hover:scale-105 aspect-square object-cover flex-shrink-0" 
+          <img
+            src={currentAvatar.image}
+            alt="Kullanıcı Avatarı"
+            className="w-14 h-14 md:w-16 md:h-16 rounded-full border-2 border-primary/50 shadow-md transition-transform duration-300 hover:scale-105 aspect-square object-cover flex-shrink-0"
           />
         </Link>
         <div className="flex-1 min-w-0">
@@ -55,11 +55,8 @@ export default function Header({
           )}
         </div>
       </div>
-      
+
       <div className="flex items-center gap-1 md:gap-2">
-        {/* ======================================================= */}
-        {/* DÜZELTME BURADA: Ayarlar butonu dışarı alındı */}
-        {/* ======================================================= */}
         {userRole !== 'koç' && (
           <Link to="/market" title="Market" className="inline-flex items-center justify-center whitespace-nowrap rounded-full text-sm font-medium transition-colors h-8 w-8 md:h-9 md:w-9 hover:bg-accent hover:text-accent-foreground">
             <ShoppingCart className="h-4 w-4 md:h-5 md:w-5" />

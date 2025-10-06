@@ -2,7 +2,7 @@ import { Outlet, useOutletContext, useLocation, useNavigate } from "react-router
 import { useState, useEffect } from "react";
 import { storage } from "@/utils/storage";
 import { toast } from 'sonner';
-import { SolvedStat, Challenge } from '@/types'; // AppContextType buradan kaldırıldı
+import { SolvedStat, Challenge } from '@/types';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { playFailSound } from '@/utils/sounds';
 import { App } from '@capacitor/app';
@@ -16,7 +16,6 @@ import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
 import { useScheduler } from '@/hooks/useScheduler';
 
-// DÜZELTME: AppContextType tanımı, ait olduğu bu dosyaya taşındı.
 type AppContextType =
   ReturnType<typeof useAuth> &
   ReturnType<typeof useCoreData> &

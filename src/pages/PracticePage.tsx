@@ -46,19 +46,14 @@ export default function PracticePage() {
     return [...new Set(dailyWords.map(w => w.unit))].sort((a,b) => a-b);
   }, []);
 
-  // Galibiyet sayısına göre doğru rozeti döndüren fonksiyon (DÜZELTİLMİŞ HALİ)
   const getBadgeImage = (wins: number) => {
-    // Not: Rozet yollarını seninle oluşturduğumuz özgün set'e göre güncelledim.
-    // Bu dosyaların public/assets klasöründe olduğundan emin olmalısın.
     if (wins >= 500) return '/assets/badge500.png';
     if (wins >= 250) return '/assets/badge250.png';
     if (wins >= 150) return '/assets/badge150.png';
     if (wins >= 100) return '/assets/badge100.png';
     if (wins >= 75) return '/assets/badge75.png';
     if (wins >= 25) return '/assets/badge25.png';
-    
-    // DEĞİŞİKLİK: null yerine default rozetin yolunu döndür.
-    return '/assets/default.png'; 
+    return '/assets/default.png';
   };
 
   const badgeImage = getBadgeImage(challengeWins);
@@ -90,30 +85,41 @@ export default function PracticePage() {
         </TabsContent>
 
         <TabsContent value="vocab-world" className="mt-4 space-y-4">
-          <Card className="relative overflow-hidden"> 
-            
-            {/* Rozet, badgeImage'in değeri ne ise ona göre gösterilecek */}
-            <img src={badgeImage} alt="Düello Rozeti" className="challenge-badge-overlay" />
-            
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Swords /> Word Challenge
-              </CardTitle>
-              <CardDescription>Bilgini sına, arkadaşlarına meydan oku ve rozetleri kazan!</CardDescription>
+          
+          {/* Ana sarmalayıcı: dikey flex, ortalanmış elemanlar, aralarında boşluk */}
+          <div className="flex flex-col items-center justify-center p-6 space-y-4 rounded-lg bg-card">
               
-              <div className="flex items-center gap-2 pt-2 font-semibold text-muted-foreground">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                <span>Düello Galibiyeti: {challengeWins}</span>
+              {/* Başlık ve açıklama */}
+              <div className="text-center">
+                  <h2 className="text-2xl font-bold flex items-center gap-2 justify-center">
+                      <Swords size={22} /> Word Challenge
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                      Bilgini sına, arkadaşlarına meydan oku ve rozetleri kazan!
+                  </p>
               </div>
-            </CardHeader>
-            
-            <CardContent className="grid grid-cols-2 gap-4">
-              {wordUnits.map(unit => (
-                <Button key={unit} onClick={() => navigate(`/word-quiz/${unit}`)}>
-                  Ünite {unit} Testi
-                </Button>
-              ))}
-            </CardContent>
+              
+              {/* Rozet ve galibiyet sayısı */}
+              <div className="flex flex-col items-center">
+                  <img src={badgeImage} alt="Düello Rozeti" className="w-24 h-24 drop-shadow-lg" />
+                  <div className="text-center font-semibold text-sm mt-2 flex items-center justify-center gap-1">
+                      <Trophy className="h-4 w-4 text-yellow-500" />
+                      <span>{challengeWins} Galibiyet</span>
+                  </div>
+              </div>
+          </div>
+
+          <Card>
+              <CardHeader>
+                <CardTitle>Ünite Testleri</CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-4">
+                  {wordUnits.map(unit => (
+                      <Button key={unit} onClick={() => navigate(`/word-quiz/${unit}`)}>
+                          Ünite {unit} Testi
+                      </Button>
+                  ))}
+              </CardContent>
           </Card>
           
           <WordSwiper />

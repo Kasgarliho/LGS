@@ -1,8 +1,5 @@
 // src/types/index.ts
 
-// Bu dosya sadece saf tip tanımlamaları içerir.
-// Herhangi bir yerden import yapmaz.
-
 export interface Subject {
   topics: any;
   id: string;
@@ -120,6 +117,3 @@ export interface Challenge {
   challenger_name?: string;
   opponent_name?: string;
 }
-
-// AppContextType tanımı, döngüsel bağımlılığı önlemek için AppLayout.tsx dosyasına taşındı.
-// Bu dosyada yer almamalıdır.
