@@ -18,7 +18,7 @@ export const useCoreData = (
   const [streakFreezes, setStreakFreezes] = useState(0);
   const [achievements, setAchievements] = useState<Achievement[]>(initialAchievementsData);
   const [userAvatars, setUserAvatars] = useState<UserAvatars>({ current: 'default', unlocked: ['default'] });
-  const [challengeWins, setChallengeWins] = useState(0); // YENİ: Galibiyet sayısı state'i
+  const [challengeWins, setChallengeWins] = useState(0);
   const [isCloudDataLoaded, setIsCloudDataLoaded] = useState(false);
 
   const updateUserCloudData = async (dataToUpdate: object) => {
@@ -40,15 +40,13 @@ export const useCoreData = (
     
     if (userId) {
       const fetchCoreData = async () => {
-        // İki isteği aynı anda gönder
         const [cloudDataRes, winsDataRes] = await Promise.all([
           supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar').eq('id', userId).maybeSingle(),
-          supabase.rpc('get_challenge_win_count', { p_user_id: userId }) // YENİ: Galibiyet sayısını çek
+          supabase.rpc('get_challenge_win_count', { p_user_id: userId })
         ]);
 
         const { data: cloudData, error } = cloudDataRes;
         
-        // YENİ: Galibiyet sayısını state'e ata
         if (winsDataRes.data) {
           setChallengeWins(winsDataRes.data);
         }
@@ -81,33 +79,18 @@ export const useCoreData = (
       setTotalPoints(0);
       setStreak(0);
       setStreakFreezes(0);
-      setChallengeWins(0); // YENİ
+      setChallengeWins(0);
       setUserAvatars({ current: 'default', unlocked: ['default'] });
       setAchievements(initialAchievementsData);
       setIsCloudDataLoaded(true);
     }
   }, [userId, userRole]);
   
-  useEffect(() => {
-    if (userRole === 'koç') return;
-    if (!isInitialized || !userId || achievements.length === 0) return;
-    
-    const unlockedAchievements = achievements.filter(a => a.unlocked);
-    const avatarsToUnlock = allAvatars.filter(avatar =>
-      avatar.unlockMethod === 'achievement' &&
-      unlockedAchievements.some(ach => ach.id === avatar.achievementId)
-    );
-    const newAvatarIds = avatarsToUnlock.map(avatar => avatar.id);
-    if (newAvatarIds.length > 0) {
-      setUserAvatars(currentAvatars => {
-        const allUnlockedIds = [...new Set([...currentAvatars.unlocked, ...newAvatarIds])];
-        if (allUnlockedIds.length > currentAvatars.unlocked.length) {
-          return { ...currentAvatars, unlocked: allUnlockedIds };
-        }
-        return currentAvatars;
-      });
-    }
-  }, [achievements, isInitialized, userId, userRole]);
+  // =================================================================
+  // HATALI KOD BLOĞU BURADAN SİLİNDİ
+  // Her girişte bildirim çıkaran gereksiz useEffect bloğu kaldırıldı.
+  // Doğru mantık zaten checkAchievements fonksiyonunun içinde yer alıyor.
+  // =================================================================
 
   useEffect(() => { if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } }, [totalPoints, isInitialized, userId]);
   useEffect(() => { if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } }, [streak, isInitialized, userId]);
@@ -211,7 +194,7 @@ export const useCoreData = (
     streakFreezes, setStreakFreezes,
     achievements,
     userAvatars,
-    challengeWins, // YENİ
+    challengeWins,
     handleBuyStreakFreeze,
     handleBuyAvatar,
     handleSetAvatar,

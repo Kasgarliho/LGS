@@ -16,6 +16,7 @@ export const useAuth = (isMuted: boolean) => {
   const [tempName, setTempName] = useState("");
   const [className, setClassName] = useState("");
   const [coachCode, setCoachCode] = useState("");
+  const [tempPassword, setTempPassword] = useState(""); // YENİ: Şifre için state
 
   useEffect(() => {
     const known = storage.loadKnownUsers();
@@ -44,8 +45,7 @@ export const useAuth = (isMuted: boolean) => {
           setUserRole(data.rol);
         } else {
           console.error("Kullanıcı verisi çekilemedi, oturum sonlandırılıyor:", error);
-          storage.clearCurrentUserId();
-          setUserId(null);
+          handleLogout(true);
         }
         setShowNameModal(false);
         setShowProfileSelector(false);
@@ -55,7 +55,25 @@ export const useAuth = (isMuted: boolean) => {
     }
   }, [userId]);
 
-  const handleRegistration = async () => {
+  const loginUser = (newUserId: string, newUserName: string) => {
+    storage.saveCurrentUserId(newUserId);
+    storage.saveUserName(newUserId, newUserName);
+
+    const currentKnownUsers = storage.loadKnownUsers();
+    const isAlreadyKnown = currentKnownUsers.some(u => u.userId === newUserId);
+    if (!isAlreadyKnown) {
+      const updatedKnownUsers = [...currentKnownUsers, { userId: newUserId, userName: newUserName }];
+      storage.saveKnownUsers(updatedKnownUsers);
+    }
+    
+    setUserId(newUserId);
+    toast.success(`Hoş geldin, ${newUserName}! Giriş başarılı.`);
+    playIntroSound(isMuted);
+    
+    window.location.reload();
+  };
+
+  const handleStudentRegistration = async () => {
     const finalName = tempName.trim().toUpperCase();
     const finalClassName = className.trim().toUpperCase();
     const finalCoachCode = coachCode.trim().toUpperCase();
@@ -85,40 +103,62 @@ export const useAuth = (isMuted: boolean) => {
             newUserId = existingUserData.id;
         } else {
             const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail, rol: 'ogrenci' }).select('id').single();
-            if (newUserError || !newUserData) {
-                toast.error("Kullanıcı kimliği oluşturulurken bir hata oluştu.");
-                throw newUserError || new Error("Yeni kullanıcı ID'si alınamadı.");
-            }
+            if (newUserError || !newUserData) { throw newUserError || new Error("Yeni kullanıcı ID'si alınamadı."); }
             newUserId = newUserData.id;
         }
         
         await supabase.from('ogrenciler').update({ baglanan_kullanici_id: newUserId }).eq('id', studentData.id);
-
-        storage.saveCurrentUserId(newUserId);
-        storage.saveUserName(newUserId, studentData.ad_soyad);
-
-        const currentKnownUsers = storage.loadKnownUsers();
-        const isAlreadyKnown = currentKnownUsers.some(u => u.userId === newUserId);
-        if (!isAlreadyKnown) {
-          const updatedKnownUsers = [...currentKnownUsers, { userId: newUserId, userName: studentData.ad_soyad }];
-          storage.saveKnownUsers(updatedKnownUsers);
-        }
-        
-        setUserId(newUserId);
-        toast.success(`Hoş geldin, ${studentData.ad_soyad}! Giriş başarılı.`);
-        playIntroSound(isMuted);
-        
-        window.location.reload();
+        loginUser(newUserId, studentData.ad_soyad);
 
     } catch (error) {
-        console.error("Kayıt sırasında beklenmedik hata:", error);
+        console.error("Öğrenci kaydı sırasında beklenmedik hata:", error);
         toast.error("Giriş yapılırken bir hata oluştu. Lütfen internet bağlantını kontrol et.");
     }
   };
 
-  const handleLogout = () => {
+  // GÜNCELLENDİ: Artık şifreyi de kontrol ediyor
+  const handleCoachRegistration = async () => {
+    const finalCoachCode = coachCode.trim().toUpperCase();
+    const finalPassword = tempPassword.trim(); // Şifrede büyük/küçük harf önemli olduğu için toUpperCase() yok
+
+    if (!finalCoachCode || !finalPassword) {
+      toast.error("Lütfen koç kodu ve şifreyi girin.");
+      return;
+    }
+    try {
+      const { data: coachData, error: coachError } = await supabase.from('koclar').select('eposta').ilike('koc_kodu', finalCoachCode).single();
+      if (coachError || !coachData) {
+        toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
+        return;
+      }
+
+      const { data: userData, error: userError } = await supabase.from('kullanicilar').select('id, ad_soyad, sifre').eq('koc_eposta', coachData.eposta).eq('rol', 'koç').single();
+      if(userError || !userData) {
+        toast.error("Bu koç koduna ait bir kullanıcı hesabı bulunamadı.");
+        return;
+      }
+
+      // YENİ: Şifre kontrolü
+      if (userData.sifre !== finalPassword) {
+        toast.error("Şifre yanlış!");
+        return;
+      }
+      
+      loginUser(userData.id, userData.ad_soyad);
+
+    } catch(error) {
+      console.error("Koç girişi sırasında beklenmedik hata:", error);
+      toast.error("Giriş yapılırken bir hata oluştu.");
+    }
+  };
+
+  const handleLogout = (reloadPage = false) => {
     storage.clearCurrentUserId();
-    window.location.href = '/';
+    if (reloadPage) {
+      window.location.reload();
+    } else {
+      window.location.href = '/';
+    }
   };
 
   const handleSwitchUser = (newUserId: string) => {
@@ -132,15 +172,14 @@ export const useAuth = (isMuted: boolean) => {
   };
 
   const handleRemoveKnownUser = (userIdToRemove: string) => {
-    if (userId === userIdToRemove) {
-      handleLogout();
-      return;
-    }
     const updatedKnownUsers = knownUsers.filter(u => u.userId !== userIdToRemove);
     storage.saveKnownUsers(updatedKnownUsers);
     setKnownUsers(updatedKnownUsers);
     storage.removeAllUserData(userIdToRemove);
     toast.info("Profil cihazdan kaldırıldı.");
+    if (userId === userIdToRemove) {
+      handleLogout(true);
+    }
   };
 
   return {
@@ -158,7 +197,10 @@ export const useAuth = (isMuted: boolean) => {
     setClassName,
     coachCode,
     setCoachCode,
-    handleRegistration,
+    tempPassword,         // YENİ
+    setTempPassword,      // YENİ
+    handleStudentRegistration,
+    handleCoachRegistration,
     handleLogout,
     handleSwitchUser,
     showRegistration,
