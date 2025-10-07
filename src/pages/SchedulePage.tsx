@@ -9,27 +9,29 @@ import { User, Activity, Flame, Users, Search } from 'lucide-react';
 import { useAppContext } from './AppLayout';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
+import { avatars } from '@/data/avatars';
+import { UserAvatars } from '@/types';
 
-// DÜZELTME: Arayüz, veritabanından gelen gerçek sütun adlarıyla eşleşecek şekilde güncellendi.
 interface StudentSummary {
   student_user_id: string;
   student_name: string;
-  student_class: string;       // 'sinif' -> 'student_class' olarak değiştirildi
-  weekly_questions: number;    // 'weekly_progress' -> 'weekly_questions' olarak değiştirildi
-  current_streak: number;      // 'seri' -> 'current_streak' olarak değiştirildi
-  last_active_date: string;    // 'son_aktiflik' -> 'last_active_date' olarak değiştirildi
+  student_class: string;
+  weekly_questions: number;
+  current_streak: number;
+  last_active_date: string | null;
+  avatar_url: UserAvatars; 
 }
 
-const defaultAvatar = '/avatars/default.png'; 
+const defaultAvatar = avatars.find(a => a.id === 'default')?.image || '';
 
 export default function SchedulePage() {
-  const { userId } = useAppContext();
   const navigate = useNavigate();
+  const { userId, userRole } = useAppContext();
   
   const [students, setStudents] = useState<StudentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('all'); 
+  const [selectedClass, setSelectedClass] = useState('all');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,9 +41,15 @@ export default function SchedulePage() {
       setLoading(true);
       setError(null);
       
-      const { data, error: rpcError } = await supabase.rpc('get_coach_students_summary', {
-        p_coach_user_id: userId
-      });
+      let rpcCall;
+      // GÜNCELLEME: Kullanıcı rolüne göre doğru fonksiyonu çağır
+      if (userRole === 'admin') {
+        rpcCall = supabase.rpc('get_all_students_summary');
+      } else {
+        rpcCall = supabase.rpc('get_coach_students_summary', { p_coach_user_id: userId });
+      }
+
+      const { data, error: rpcError } = await rpcCall;
 
       if (rpcError) {
         console.error("Öğrenci özeti çekilirken hata:", rpcError);
@@ -53,30 +61,32 @@ export default function SchedulePage() {
     };
 
     fetchStudents();
-  }, [userId]);
+  }, [userId, userRole]);
 
   const classNames = useMemo(() => {
     if (!students) return [];
-    // DÜZELTME: 's.sinif' -> 's.student_class' olarak değiştirildi
     const uniqueClasses = [...new Set(students.map(s => s.student_class).filter(Boolean))];
     return uniqueClasses.sort();
   }, [students]);
 
   const filteredStudents = useMemo(() => {
     return students
-      // DÜZELTME: 'student.sinif' -> 'student.student_class' olarak değiştirildi
       .filter(student => selectedClass === 'all' || student.student_class === selectedClass)
       .filter(student => student.student_name.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [students, searchTerm, selectedClass]);
 
-
-  const formatLastActive = (dateString: string) => {
+  const formatLastActive = (dateString: string | null) => {
     if (!dateString) return "Bilinmiyor";
     try {
       return formatDistanceToNow(parseISO(dateString), { addSuffix: true, locale: tr });
     } catch (e) {
       return "Geçersiz Tarih";
     }
+  };
+
+  const getAvatarImage = (avatarData: UserAvatars) => {
+    const currentAvatarId = avatarData?.current || 'default';
+    return avatars.find(a => a.id === currentAvatarId)?.image || defaultAvatar;
   };
 
   if (loading) {
@@ -93,7 +103,7 @@ export default function SchedulePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
-            Öğrencilerim
+            {userRole === 'admin' ? 'Tüm Öğrenciler' : 'Öğrencilerim'}
           </CardTitle>
           <CardDescription>Öğrencilerinin genel durumunu ve ilerlemelerini buradan takip et.</CardDescription>
         </CardHeader>
@@ -132,9 +142,8 @@ export default function SchedulePage() {
               onClick={() => navigate(`/student/${student.student_user_id}`)}
             >
               <CardContent className="p-4 flex items-center gap-4">
-                {/* DÜZELTME: Avatar URL'si veritabanından gelmediği için varsayılan avatar kullanılıyor */}
                 <img
-                  src={defaultAvatar}
+                  src={getAvatarImage(student.avatar_url)}
                   alt={`${student.student_name} avatarı`}
                   className="w-16 h-16 rounded-full border-2 border-border"
                 />
@@ -142,24 +151,20 @@ export default function SchedulePage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-bold">{student.student_name}</h3>
-                      {/* DÜZELTME: 'student.sinif' -> 'student.student_class' olarak değiştirildi */}
                       <p className="text-xs px-2 py-0.5 bg-muted rounded-full inline-block">{student.student_class}</p>
                     </div>
                   </div>
                   <div className="space-y-1 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2" title="Haftalık Çözülen Soru Sayısı">
                       <Activity className="h-4 w-4 text-blue-500" />
-                       {/* DÜZELTME: 'weekly_progress' -> 'weekly_questions' olarak değiştirildi */}
                       <span>Haftalık: {student.weekly_questions || 0} soru</span>
                     </div>
                     <div className="flex items-center gap-2" title="Güncel Seri">
                       <Flame className="h-4 w-4 text-amber-500" />
-                       {/* DÜZELTME: 'seri' -> 'current_streak' olarak değiştirildi */}
                       <span>Seri: {student.current_streak || 0} gün</span>
                     </div>
                   </div>
                    <p className="text-xs text-muted-foreground pt-1">
-                      {/* DÜZELTME: 'son_aktiflik' -> 'last_active_date' olarak değiştirildi */}
                       Son aktiflik: {formatLastActive(student.last_active_date)}
                     </p>
                 </div>

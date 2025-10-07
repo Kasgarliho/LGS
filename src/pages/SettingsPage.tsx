@@ -1,16 +1,21 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BellRing, History, ChevronRight, LogOut, User, Users, Swords } from "lucide-react";
+import { BellRing, History, ChevronRight, LogOut, User, Users, Swords, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppContext } from "./AppLayout";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // DialogDescription'ı farklı bir isimle import et
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 import  ProfileSwitcher  from "@/components/ProfileSwitcher";
 
 export const SettingsPage = () => {
   const { 
+    userRole,
     notificationSettings, 
     handleUpdateNotificationSettings, 
     handleLogout, 
@@ -19,33 +24,45 @@ export const SettingsPage = () => {
     userId, 
     handleSwitchUser, 
     handleRemoveKnownUser, 
-    showRegistration 
+    showRegistration,
+    handleChangePassword 
   } = useAppContext();
+
+  // YENİ: Şifre formu için state'ler
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   if (!notificationSettings) {
     return <div>Yükleniyor...</div>;
   }
+  
+  const onPasswordChange = async () => {
+    if (newPassword.length < 6) {
+      toast.error("Yeni şifre en az 6 karakter olmalıdır.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Yeni şifreler uyuşmuyor.");
+      return;
+    }
+    
+    const success = await handleChangePassword(currentPassword, newPassword);
+    if (success) {
+      setIsPasswordDialogOpen(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
 
-  // Fonksiyonlar
-  const handleStudyReminderToggle = (isChecked: boolean) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, studyPlanReminder: { ...notificationSettings.studyPlanReminder, enabled: isChecked } });
-  };
-  const handleStudyReminderTimeChange = (value: string) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, studyPlanReminder: { ...notificationSettings.studyPlanReminder, minutesBefore: parseInt(value, 10) } });
-  };
-  const handleBagReminderToggle = (isChecked: boolean) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, bagReminder: { ...notificationSettings.bagReminder, enabled: isChecked } });
-  };
-  const handleBagReminderTimeChange = (value: string) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, bagReminder: { ...notificationSettings.bagReminder, hour: parseInt(value.split(':')[0], 10), minute: parseInt(value.split(':')[1], 10) } });
-  };
-  const handleStreakReminderToggle = (isChecked: boolean) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, streakReminder: isChecked });
-  };
-  // YENİ: Meydan okuma hatırlatıcısı için fonksiyon
-  const handleChallengeReminderToggle = (isChecked: boolean) => {
-    handleUpdateNotificationSettings({ ...notificationSettings, challengeReminder: isChecked });
-  };
+  const handleStudyReminderToggle = (isChecked: boolean) => handleUpdateNotificationSettings({ ...notificationSettings, studyPlanReminder: { ...notificationSettings.studyPlanReminder, enabled: isChecked } });
+  const handleStudyReminderTimeChange = (value: string) => handleUpdateNotificationSettings({ ...notificationSettings, studyPlanReminder: { ...notificationSettings.studyPlanReminder, minutesBefore: parseInt(value, 10) } });
+  const handleBagReminderToggle = (isChecked: boolean) => handleUpdateNotificationSettings({ ...notificationSettings, bagReminder: { ...notificationSettings.bagReminder, enabled: isChecked } });
+  const handleBagReminderTimeChange = (value: string) => handleUpdateNotificationSettings({ ...notificationSettings, bagReminder: { ...notificationSettings.bagReminder, hour: parseInt(value.split(':')[0], 10), minute: parseInt(value.split(':')[1], 10) } });
+  const handleStreakReminderToggle = (isChecked: boolean) => handleUpdateNotificationSettings({ ...notificationSettings, streakReminder: isChecked });
+  const handleChallengeReminderToggle = (isChecked: boolean) => handleUpdateNotificationSettings({ ...notificationSettings, challengeReminder: isChecked });
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -54,7 +71,28 @@ export const SettingsPage = () => {
           <CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Hesap Yönetimi</CardTitle>
           <CardDescription>Aktif kullanıcı: <span className="font-semibold">{userName || 'Giriş yapılmadı'}</span></CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-2">
+            {(userRole === 'koç' || userRole === 'admin') && (
+                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline" className="w-full"><KeyRound className="h-4 w-4 mr-2" />Şifre Değiştir</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Şifreni Değiştir</DialogTitle>
+                            <DialogDescriptionComponent>Güvenliğin için yeni bir şifre belirle.</DialogDescriptionComponent>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <Input type="password" placeholder="Mevcut Şifren" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+                            <Input type="password" placeholder="Yeni Şifren" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                            <Input type="password" placeholder="Yeni Şifren (Tekrar)" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={onPasswordChange}>Değişiklikleri Kaydet</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="w-full"><LogOut className="h-4 w-4 mr-2" />Çıkış Yap</Button>
@@ -66,7 +104,7 @@ export const SettingsPage = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                <AlertDialogAction onClick={handleLogout}>Çıkış Yap</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleLogout(false)}>Çıkış Yap</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -106,13 +144,12 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
       
-      {/* YENİ: Meydan Okuma Bildirimi Kartı */}
       <Card className="shadow-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Swords className="h-5 w-5 text-primary" /> Meydan Okuma Bildirimi</CardTitle>
           <CardDescription>Uygulamayı bir süre kullanmadığında seni motive etmek için bildirim gönderir.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="challenge-reminder">Hatırlatıcıyı Etkinleştir</Label>

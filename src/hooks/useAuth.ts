@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { storage, KnownUser } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
-import { playIntroSound } from '@/utils/sounds';
+import { playIntroSound, playSuccessSound, playFailSound } from '@/utils/sounds';
 
 export const useAuth = (isMuted: boolean) => {
   const [userId, setUserId] = useState<string | null>(() => storage.loadCurrentUserId());
@@ -16,7 +16,7 @@ export const useAuth = (isMuted: boolean) => {
   const [tempName, setTempName] = useState("");
   const [className, setClassName] = useState("");
   const [coachCode, setCoachCode] = useState("");
-  const [tempPassword, setTempPassword] = useState(""); // YENİ: Şifre için state
+  const [tempPassword, setTempPassword] = useState("");
 
   useEffect(() => {
     const known = storage.loadKnownUsers();
@@ -116,10 +116,9 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
-  // GÜNCELLENDİ: Artık şifreyi de kontrol ediyor
   const handleCoachRegistration = async () => {
     const finalCoachCode = coachCode.trim().toUpperCase();
-    const finalPassword = tempPassword.trim(); // Şifrede büyük/küçük harf önemli olduğu için toUpperCase() yok
+    const finalPassword = tempPassword.trim();
 
     if (!finalCoachCode || !finalPassword) {
       toast.error("Lütfen koç kodu ve şifreyi girin.");
@@ -138,7 +137,6 @@ export const useAuth = (isMuted: boolean) => {
         return;
       }
 
-      // YENİ: Şifre kontrolü
       if (userData.sifre !== finalPassword) {
         toast.error("Şifre yanlış!");
         return;
@@ -150,6 +148,48 @@ export const useAuth = (isMuted: boolean) => {
       console.error("Koç girişi sırasında beklenmedik hata:", error);
       toast.error("Giriş yapılırken bir hata oluştu.");
     }
+  };
+
+  // YENİ: Şifre değiştirme fonksiyonu
+  const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
+    if (!userId) {
+      toast.error("Kullanıcı bulunamadı.");
+      return false;
+    }
+    
+    // 1. Mevcut şifreyi doğrula
+    const { data: userData, error: fetchError } = await supabase
+      .from('kullanicilar')
+      .select('sifre')
+      .eq('id', userId)
+      .single();
+    
+    if (fetchError || !userData) {
+      toast.error("Kullanıcı verileri alınamadı.");
+      return false;
+    }
+    
+    if (userData.sifre !== currentPassword) {
+      playFailSound(isMuted);
+      toast.error("Mevcut şifre yanlış!");
+      return false;
+    }
+
+    // 2. Yeni şifreyi güncelle
+    const { error: updateError } = await supabase
+      .from('kullanicilar')
+      .update({ sifre: newPassword })
+      .eq('id', userId);
+
+    if (updateError) {
+      toast.error("Şifre güncellenirken bir hata oluştu.");
+      console.error("Şifre güncelleme hatası:", updateError);
+      return false;
+    }
+
+    playSuccessSound(isMuted);
+    toast.success("Şifreniz başarıyla güncellendi!");
+    return true;
   };
 
   const handleLogout = (reloadPage = false) => {
@@ -197,10 +237,11 @@ export const useAuth = (isMuted: boolean) => {
     setClassName,
     coachCode,
     setCoachCode,
-    tempPassword,         // YENİ
-    setTempPassword,      // YENİ
+    tempPassword,
+    setTempPassword,
     handleStudentRegistration,
     handleCoachRegistration,
+    handleChangePassword, // YENİ
     handleLogout,
     handleSwitchUser,
     showRegistration,
