@@ -128,7 +128,6 @@ function AppController() {
                   </div>
                 </>
               ) : (
-                // GÜNCELLENDİ: Koç Girişi ekranına Şifre alanı eklendi
                 <>
                   <DialogHeader><DialogTitle className="text-2xl">Koç Girişi</DialogTitle><DialogDescription>Devam etmek için size özel koç kodunu ve şifrenizi girin.</DialogDescription></DialogHeader>
                   <div className="py-4 space-y-4">
@@ -146,7 +145,10 @@ function AppController() {
     );
   }
 
-  return userRole?.toLowerCase() === 'koç' ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
+  // GÜNCELLEME: Artık 'admin' rolünü de kontrol ediyor.
+  const isCoachOrAdmin = userRole?.toLowerCase() === 'koç' || userRole?.toLowerCase() === 'admin';
+
+  return isCoachOrAdmin ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
 }
 
 const App = () => {

@@ -396,13 +396,6 @@ export const questions: Question[] = [
     explanation: 'Lozan Barış Konferansı\'nda Türk heyetinin başkanı İsmet İnönü olmuştur.'
   },
   {
-    id: 'og_ink_6', subjectId: 'revolution', topic: 'Antlaşmalar', difficulty: 'easy',
-    question: 'Yukarıdaki antlaşmalardan hangileri Türk milleti tarafından kabul edilmiştir?',
-    options: ['Yalnız I', 'Yalnız III', 'I ve II', 'II ve III'],
-    correctAnswer: 1,
-    explanation: 'Mondros ve Sevr antlaşmaları Türk milleti tarafından reddedilmiş, Kurtuluş Savaşı sonrası Lozan Antlaşması kabul edilmiştir.'
-  },
-  {
     id: 'og_ink_7', subjectId: 'revolution', topic: 'Milli Mücadele', difficulty: 'easy',
     question: 'Kurtuluş Savaşı sırasında yayımlanan hangi genelge “milletin bağımsızlığını yine milletin azim ve kararı kurtaracaktır” ifadesini içermektedir?',
     options: ['Havza Genelgesi', 'Amasya Genelgesi', 'Erzurum Kongresi', 'Sivas Kongresi'],
@@ -417,12 +410,12 @@ export const questions: Question[] = [
     explanation: 'Misak-ı Milli, son Osmanlı Mebusan Meclisi\'nde kabul edilmiştir.'
   },
   {
-    id: 'og_ink_9', subjectId: 'revolution', topic: 'Eğitim', difficulty: 'medium',
-    question: 'Tevhid-i Tedrisat Kanunu’nun sonuçları arasında hangileri vardır?',
-    options: ['I ve II', 'I ve III', 'II ve III', 'Yalnız III'],
+     id: 'og_ink_9', subjectId: 'revolution', topic: 'Eğitim', difficulty: 'medium',
+    question: 'Aşağıdakilerden hangisi Tevhid-i Tedrisat Kanunu’nun (Öğretim Birliği Yasası) sonuçlarından biridir?',
+    options: ['Eğitimde birliğin sağlanması', 'Saltanatın kaldırılması', 'Medreselerin tekrar açılması', 'Harf İnkılabının yapılması'],
     correctAnswer: 0,
-    explanation: 'Tevhid-i Tedrisat Kanunu ile eğitimde birlik sağlanmış (I) ve eğitim laikleştirilerek laikliğin güçlenmesine katkıda bulunulmuştur (II).'
-  },
+    explanation: 'Tevhid-i Tedrisat Kanunu ile ülkedeki tüm eğitim kurumları Milli Eğitim Bakanlığı\'na bağlanarak eğitim ve öğretimde birlik sağlanmıştır.'
+    },
   {
     id: 'og_ink_10', subjectId: 'revolution', topic: 'Atatürk İlkeleri', difficulty: 'easy',
     question: 'Atatürk’ün hangi ilkesi halkın kendi iradesiyle yönetime katılmasını esas alır?',
@@ -501,11 +494,11 @@ export const questions: Question[] = [
     explanation: 'Atatürk milliyetçiliği, ırk, din ayrımı gözetmeden vatandaşlık bağına dayanan kapsayıcı bir anlayıştır.'
   },
   {
-    id: 'og_ink_21', subjectId: 'revolution', topic: 'İnkılaplar', difficulty: 'medium',
-    question: 'Yukarıdaki inkılaplardan hangileri toplumsal hayatı düzenlemeye yöneliktir?',
-    options: ['I ve II', 'I ve III', 'II ve III', 'I, II ve III'],
+     id: 'og_ink_21', subjectId: 'revolution', topic: 'İnkılaplar', difficulty: 'medium',
+    question: 'Aşağıdaki inkılaplardan hangisi doğrudan toplumsal hayatı düzenlemeye yöneliktir?',
+    options: ['Medeni Kanun\'un kabulü', 'Sanayi Teşvik Kanunu\'nun çıkarılması', 'İzmir İktisat Kongresi\'nin toplanması', 'Tevhid-i Tedrisat Kanunu'],
     correctAnswer: 0,
-    explanation: 'Medeni Kanun ve kadınlara seçme/seçilme hakkı verilmesi, doğrudan toplumsal yapıyı ve kadın-erkek ilişkilerini düzenleyen inkılaplardır.'
+    explanation: 'Medeni Kanun; evlenme, boşanma, miras gibi konularda kadın-erkek eşitliğini getirerek doğrudan toplumsal hayatı düzenlemiştir. Diğer seçenekler daha çok ekonomi ve eğitimle ilgilidir.'
   },
   {
     id: 'og_ink_22', subjectId: 'revolution', topic: 'Ekonomi', difficulty: 'easy',
@@ -557,11 +550,11 @@ export const questions: Question[] = [
     explanation: 'Tevhid-i Tedrisat Kanunu, eğitim ve kültür alanında yapılan önemli bir inkılaptır.'
   },
   {
-    id: 'og_ink_29', subjectId: 'revolution', topic: 'Ekonomi', difficulty: 'medium',
-    question: 'Yukarıdakilerden hangileri ekonomik gelişmelerdir?',
-    options: ['I ve II', 'I ve III', 'II ve III', 'Yalnız I'],
+     id: 'og_ink_29', subjectId: 'revolution', topic: 'Ekonomi', difficulty: 'medium',
+    question: 'Aşağıdakilerden hangisi Atatürk döneminde yapılan ekonomik gelişmelerden biridir?',
+    options: ['İzmir İktisat Kongresi\'nin toplanması', 'Saltanatın kaldırılması', 'Tekke ve zaviyelerin kapatılması', 'Medeni Kanun\'un kabulü'],
     correctAnswer: 0,
-    explanation: 'İzmir İktisat Kongresi ve Kabotaj Kanunu, ekonomik alanda yapılan önemli adımlardır.'
+    explanation: 'İzmir İktisat Kongresi, yeni Türkiye devletinin ekonomik hedeflerini belirlemek amacıyla toplanmış önemli bir ekonomik gelişmedir.'
   },
   {
     id: 'og_ink_30', subjectId: 'revolution', topic: 'İnkılaplar', difficulty: 'easy',

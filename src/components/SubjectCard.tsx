@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { useAppContext } from "@/pages/AppLayout";
 
 interface SubjectCardProps {
   subject: Subject;
@@ -52,14 +51,23 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
     }
   };
   
+  // GÜNCELLENDİ: Platforma göre farklı davranan fonksiyon
   const handleOpenMebiApp = async () => {
     const appUrl = 'mebi://';
     const androidStoreUrl = 'https://play.google.com/store/apps/details?id=tr.gov.eba.mebi';
     const iosStoreUrl = 'https://apps.apple.com/tr/app/id1438258386';
-
     const platform = Capacitor.getPlatform();
-    const storeUrl = platform === 'ios' ? iosStoreUrl : androidStoreUrl;
 
+    // Eğer platform web ise, direkt mağaza linkini yeni sekmede aç
+    if (platform === 'web') {
+      const storeUrl = /iPad|iPhone|iPod/.test(navigator.userAgent) ? iosStoreUrl : androidStoreUrl;
+      toast.info("MEB uygulaması için mağaza sayfası açılıyor...");
+      window.open(storeUrl, '_blank');
+      return;
+    }
+
+    // Eğer platform mobil ise (Android/iOS), mevcut mantığı kullan
+    const storeUrl = platform === 'ios' ? iosStoreUrl : androidStoreUrl;
     try {
       const canOpen = await AppLauncher.canOpenUrl({ url: appUrl });
       if (canOpen.value) {

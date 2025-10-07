@@ -93,7 +93,8 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <ScrollArea className="flex-1">
+        {/* DÜZELTME: Kaydırma sorununu çözmek için `min-h-0` eklendi */}
+        <ScrollArea className="flex-1 min-h-0">
           <div className="space-y-2 pr-4">
             {loading && <p className="text-center text-muted-foreground">Yükleniyor...</p>}
             {!loading && filteredOpponents.length === 0 && (

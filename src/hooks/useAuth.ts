@@ -130,8 +130,15 @@ export const useAuth = (isMuted: boolean) => {
         toast.error("Koç kodu bulunamadı. Lütfen kontrol et.");
         return;
       }
-
-      const { data: userData, error: userError } = await supabase.from('kullanicilar').select('id, ad_soyad, sifre').eq('koc_eposta', coachData.eposta).eq('rol', 'koç').single();
+      
+      // DÜZELTME: Artık hem 'koç' hem de 'admin' rollerini arıyor.
+      const { data: userData, error: userError } = await supabase
+        .from('kullanicilar')
+        .select('id, ad_soyad, sifre')
+        .eq('koc_eposta', coachData.eposta)
+        .in('rol', ['koç', 'admin']) // '.eq('rol', 'koç')' yerine bu satır geldi.
+        .single();
+        
       if(userError || !userData) {
         toast.error("Bu koç koduna ait bir kullanıcı hesabı bulunamadı.");
         return;
@@ -145,19 +152,17 @@ export const useAuth = (isMuted: boolean) => {
       loginUser(userData.id, userData.ad_soyad);
 
     } catch(error) {
-      console.error("Koç girişi sırasında beklenmedik hata:", error);
+      console.error("Koç/Admin girişi sırasında beklenmedik hata:", error);
       toast.error("Giriş yapılırken bir hata oluştu.");
     }
   };
 
-  // YENİ: Şifre değiştirme fonksiyonu
   const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
     if (!userId) {
       toast.error("Kullanıcı bulunamadı.");
       return false;
     }
     
-    // 1. Mevcut şifreyi doğrula
     const { data: userData, error: fetchError } = await supabase
       .from('kullanicilar')
       .select('sifre')
@@ -175,7 +180,6 @@ export const useAuth = (isMuted: boolean) => {
       return false;
     }
 
-    // 2. Yeni şifreyi güncelle
     const { error: updateError } = await supabase
       .from('kullanicilar')
       .update({ sifre: newPassword })
@@ -241,7 +245,7 @@ export const useAuth = (isMuted: boolean) => {
     setTempPassword,
     handleStudentRegistration,
     handleCoachRegistration,
-    handleChangePassword, // YENİ
+    handleChangePassword,
     handleLogout,
     handleSwitchUser,
     showRegistration,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Question, Subject, SolvedStat } from "@/types"; // SolvedStat artık sadece @/types'tan geliyor
+import { Question, Subject, SolvedStat } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,8 +15,6 @@ interface QuestionSolverProps {
   onFinish: (solvedStats: SolvedStat[]) => void;
   onClose: () => void;
 }
-
-// DÜZELTME: Gereksiz olan SolvedStat tanımı buradan kaldırıldı.
 
 export default function QuestionSolver({ questions, subjects, onFinish, onClose }: QuestionSolverProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -116,7 +114,7 @@ export default function QuestionSolver({ questions, subjects, onFinish, onClose 
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="space-y-2">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="bg-primary/10 text-primary">{getSubjectName(currentQuestion.subjectId)}</Badge>
                 <Badge variant="outline" className="bg-secondary/10 text-secondary-foreground">{currentQuestion.topic}</Badge>
                 <Badge variant="outline" className={`${currentQuestion.difficulty === 'easy' ? 'bg-success/10 text-success' : ''} ${currentQuestion.difficulty === 'medium' ? 'bg-warning/10 text-warning' : ''} ${currentQuestion.difficulty === 'hard' ? 'bg-destructive/10 text-destructive' : ''}`}>{currentQuestion.difficulty === 'easy' ? 'Kolay' : currentQuestion.difficulty === 'medium' ? 'Orta' : 'Zor'}</Badge>
@@ -144,7 +142,8 @@ export default function QuestionSolver({ questions, subjects, onFinish, onClose 
                 <Button key={index} variant={buttonVariant} className={`h-auto p-4 text-left justify-start text-wrap transition-all duration-300 ${extraClasses}`} onClick={() => handleAnswerClick(index)} disabled={showResult}>
                   <div className="flex items-center gap-3 w-full">
                     <span className="font-bold text-lg min-w-[32px] h-8 rounded-full bg-muted flex items-center justify-center">{String.fromCharCode(65 + index)}</span>
-                    <span className="flex-1 text-base text-wrap">{option}</span>
+                    {/* DÜZELTME: Metnin taşmasını önlemek için 'break-words' eklendi */}
+                    <span className="flex-1 text-base text-wrap break-words">{option}</span>
                     {showResult && index === currentQuestion.correctAnswer && (<CheckCircle className="h-5 w-5 text-success-foreground" />)}
                     {showResult && index === selectedAnswer && selectedAnswer !== currentQuestion.correctAnswer && (<XCircle className="h-5 w-5 text-destructive-foreground" />)}
                   </div>
