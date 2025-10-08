@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import { Question } from "@/types";
+import { Question, SolvedStat } from "@/types"; // Düzeltilmiş import
 import { questions as allQuestions } from "@/data/questions";
 import { useAppContext } from "./AppLayout";
-import QuestionSolver, { SolvedStat } from "@/components/QuestionSolver";
+import QuestionSolver from "@/components/QuestionSolver";
 import DailyQuestions from "@/components/DailyQuestions";
 import MotivationalQuote from "@/components/MotivationalQuote";
 import WordSwiper from "@/components/WordSwiper";
@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 import { dailyWords } from "@/data/dailywords";
 import { cn } from "@/lib/utils";
 
-// GÜNCELLEME: Rozet listesi, senin dosya yapına ve seviyelerine göre düzenlendi.
 const badges = [
   { wins: 0, image: '/assets/default.png', name: 'Başlangıç Ligi' },
   { wins: 25, image: '/assets/badge25.png', name: 'Bronz Lig' },
@@ -42,10 +41,10 @@ export default function PracticePage() {
     setIsSolving(true);
   };
   
-  const handleFinishSolving = (correctlySolved: SolvedStat[]) => {
+  const handleFinishSolving = (solvedStats: SolvedStat[]) => {
     setIsSolving(false);
     if (selectedSubjectId) {
-      handleQuizCompletion(correctlySolved, selectedSubjectId);
+      handleQuizCompletion(solvedStats, selectedSubjectId);
     }
     setSelectedSubjectId(null);
   };
@@ -71,26 +70,26 @@ export default function PracticePage() {
     return currentBadge;
   };
 
-  const currentBadge = getCurrentBadge(challengeWins);
+  const currentBadge = getCurrentBadge(challengeWins || 0);
 
   if (isSolving) {
     return <QuestionSolver questions={dailyQuestions} subjects={subjects} onFinish={handleFinishSolving} onClose={() => setIsSolving(false)} />;
   }
 
   return (
-    <div className="p-4 space-y-6 animate-slide-up">
+    <div className="space-y-6 animate-slide-up">
       <Tabs defaultValue="gunluk-gorev" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-primary text-primary-foreground shadow-md">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="gunluk-gorev">Günlük Görev</TabsTrigger>
           <TabsTrigger value="vocab-world">Vocab World</TabsTrigger>
           <TabsTrigger value="araclar">Araçlar</TabsTrigger>
         </TabsList>
 
-        <div className="mt-4">
+        <div className="mt-6">
           <MotivationalQuote />
         </div>
 
-        <TabsContent value="gunluk-gorev" className="mt-4 space-y-6">
+        <TabsContent value="gunluk-gorev" className="mt-6 space-y-6">
           <DailyQuestions 
             dailyQuestionsCount={36}
             availableSubjects={availableSubjects} 
@@ -99,7 +98,7 @@ export default function PracticePage() {
           />
         </TabsContent>
 
-        <TabsContent value="vocab-world" className="mt-4 space-y-4">
+        <TabsContent value="vocab-world" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -110,12 +109,12 @@ export default function PracticePage() {
             <CardContent className="space-y-4">
               <div className="flex flex-col items-center justify-center p-4 pt-0">
                 <div className="flex flex-col items-center gap-2 mb-4">
-                    <img src={currentBadge.image} alt={currentBadge.name} className="w-24 h-24 drop-shadow-lg animate-bounce-in" />
+                    <img src={currentBadge.image} alt={currentBadge.name} className="w-24 h-24 rounded-full object-cover aspect-square drop-shadow-lg" />
                     <div className="text-center">
                         <p className="font-bold">{currentBadge.name}</p>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Trophy className="h-4 w-4 text-yellow-500" />
-                            <span>{challengeWins} Galibiyet</span>
+                            <span>{challengeWins || 0} Galibiyet</span>
                         </div>
                     </div>
                 </div>
@@ -123,14 +122,14 @@ export default function PracticePage() {
                     <h4 className="text-sm font-semibold text-center mb-3">Tüm Rozetler</h4>
                     <div className="flex justify-center items-end gap-2">
                         {badges.map(badge => {
-                            const isUnlocked = challengeWins >= badge.wins;
+                            const isUnlocked = (challengeWins || 0) >= badge.wins;
                             return (
                                 <Tooltip key={badge.name}>
                                     <TooltipTrigger>
                                         <img 
                                             src={badge.image} 
                                             alt={badge.name} 
-                                            className={cn("w-10 h-10 transition-all", !isUnlocked && "grayscale opacity-40")}
+                                            className={cn("w-10 h-10 rounded-full object-cover aspect-square transition-all", !isUnlocked && "grayscale opacity-40")}
                                         />
                                     </TooltipTrigger>
                                     <TooltipContent>
@@ -161,7 +160,7 @@ export default function PracticePage() {
           <WordSwiper />
         </TabsContent>
 
-        <TabsContent value="araclar" className="mt-4">
+        <TabsContent value="araclar" className="mt-6">
            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Stopwatch />
            </div>

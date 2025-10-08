@@ -44,7 +44,7 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
   }, [open, userId]);
 
   const filteredOpponents = useMemo(() => {
-    return opponents.filter(op => 
+    return opponents.filter(op =>
       op.user_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [opponents, searchTerm]);
@@ -70,13 +70,14 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
     }
   };
 
-  const getAvatarImage = (avatarData: UserAvatars) => {
+  const getAvatarImage = (avatarData: UserAvatars | null) => {
     const currentAvatarId = avatarData?.current || 'default';
     return avatars.find(a => a.id === currentAvatarId)?.image || defaultAvatar;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {/* === DEĞİŞİKLİK BURADA BAŞLIYOR: max-h-[80vh] ve flex eklendi === */}
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Bir Arkadaşına Meydan Oku</DialogTitle>
@@ -86,38 +87,40 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
         </DialogHeader>
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Arkadaş ara..." 
+          <Input
+            placeholder="Arkadaş ara..."
             className="pl-8"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {/* DÜZELTME: Kaydırma sorununu çözmek için `min-h-0` eklendi */}
-        <ScrollArea className="flex-1 min-h-0">
-          <div className="space-y-2 pr-4">
-            {loading && <p className="text-center text-muted-foreground">Yükleniyor...</p>}
-            {!loading && filteredOpponents.length === 0 && (
-              <p className="text-center text-muted-foreground py-4">Meydan okunacak kimse bulunamadı.</p>
-            )}
-            {filteredOpponents.map(opponent => (
-              <div key={opponent.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={getAvatarImage(opponent.user_avatar)} 
-                    alt={opponent.user_name} 
-                    className="w-10 h-10 rounded-full"
-                  />
-                  <span className="font-medium">{opponent.user_name}</span>
+        {/* === DEĞİŞİKLİK: Listenin etrafına ScrollArea eklendi ve altındaki div'e class atandı === */}
+        <div className="flex-1 min-h-0">
+          <ScrollArea className="h-full pr-4">
+            <div className="space-y-2">
+              {loading && <p className="text-center text-muted-foreground py-4">Yükleniyor...</p>}
+              {!loading && filteredOpponents.length === 0 && (
+                <p className="text-center text-muted-foreground py-4">Meydan okunacak kimse bulunamadı.</p>
+              )}
+              {filteredOpponents.map(opponent => (
+                <div key={opponent.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={getAvatarImage(opponent.user_avatar)}
+                      alt={opponent.user_name}
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <span className="font-medium">{opponent.user_name}</span>
+                  </div>
+                  <Button size="sm" onClick={() => handleChallenge(opponent.user_id)}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Gönder
+                  </Button>
                 </div>
-                <Button size="sm" onClick={() => handleChallenge(opponent.user_id)}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Gönder
-                </Button>
-              </div>
-            ))}
-          </div>
-        </ScrollArea>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

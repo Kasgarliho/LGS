@@ -73,6 +73,9 @@ export const useAuth = (isMuted: boolean) => {
     window.location.reload();
   };
 
+  // =================================================================
+  // GÜNCELLENEN ÖĞRENCİ GİRİŞ FONKSİYONU
+  // =================================================================
   const handleStudentRegistration = async () => {
     const finalName = tempName.trim().toUpperCase();
     const finalClassName = className.trim().toUpperCase();
@@ -90,31 +93,51 @@ export const useAuth = (isMuted: boolean) => {
         }
         const finalCoachEmail = coachData.eposta;
 
-        const { data: studentData, error: studentError } = await supabase.from('ogrenciler').select('*').ilike('ad_soyad', finalName).ilike('sinif', finalClassName).ilike('koc_eposta', finalCoachEmail).single();
+        // 1. Adım: Öğrenciyi 'ogrenciler' tablosunda bul.
+        const { data: studentData, error: studentError } = await supabase
+            .from('ogrenciler')
+            .select('id, ad_soyad, baglanan_kullanici_id') // baglanan_kullanici_id'yi de alıyoruz
+            .ilike('ad_soyad', finalName)
+            .ilike('sinif', finalClassName)
+            .ilike('koc_eposta', finalCoachEmail)
+            .single();
+
         if (studentError || !studentData) {
             toast.error("Bilgiler eşleşmedi. Ad, sınıf ve koç kodunu kontrol et.");
             return;
         }
 
-        let newUserId;
-        const { data: existingUserData } = await supabase.from('kullanicilar').select('id').ilike('ad_soyad', finalName).ilike('koc_eposta', finalCoachEmail).maybeSingle();
+        let userIdToLogin;
 
-        if (existingUserData) {
-            newUserId = existingUserData.id;
+        // 2. Adım: Öğrencinin zaten bağlanmış bir kullanıcı ID'si var mı diye kontrol et.
+        if (studentData.baglanan_kullanici_id) {
+            // Eğer varsa, yeni kullanıcı oluşturma, mevcut ID'yi kullan.
+            userIdToLogin = studentData.baglanan_kullanici_id;
         } else {
-            const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ ad_soyad: finalName, koc_eposta: finalCoachEmail, rol: 'ogrenci' }).select('id').single();
+            // Eğer yoksa (ilk giriş), o zaman yeni bir kullanıcı oluştur.
+            const { data: newUserData, error: newUserError } = await supabase.from('kullanicilar').insert({ 
+                ad_soyad: finalName, 
+                koc_eposta: finalCoachEmail, // İlk kayıttaki koç mailini kullan
+                rol: 'ogrenci' 
+            }).select('id').single();
+            
             if (newUserError || !newUserData) { throw newUserError || new Error("Yeni kullanıcı ID'si alınamadı."); }
-            newUserId = newUserData.id;
+            
+            userIdToLogin = newUserData.id;
+            
+            // Yeni kullanıcı ID'sini 'ogrenciler' tablosuna bağla.
+            await supabase.from('ogrenciler').update({ baglanan_kullanici_id: userIdToLogin }).eq('id', studentData.id);
         }
         
-        await supabase.from('ogrenciler').update({ baglanan_kullanici_id: newUserId }).eq('id', studentData.id);
-        loginUser(newUserId, studentData.ad_soyad);
+        // Bulunan veya yeni oluşturulan ID ile kullanıcıyı sisteme giriş yaptır.
+        loginUser(userIdToLogin, studentData.ad_soyad);
 
     } catch (error) {
         console.error("Öğrenci kaydı sırasında beklenmedik hata:", error);
         toast.error("Giriş yapılırken bir hata oluştu. Lütfen internet bağlantını kontrol et.");
     }
   };
+  // =================================================================
 
   const handleCoachRegistration = async () => {
     const finalCoachCode = coachCode.trim().toUpperCase();
@@ -131,12 +154,11 @@ export const useAuth = (isMuted: boolean) => {
         return;
       }
       
-      // DÜZELTME: Artık hem 'koç' hem de 'admin' rollerini arıyor.
       const { data: userData, error: userError } = await supabase
         .from('kullanicilar')
         .select('id, ad_soyad, sifre')
         .eq('koc_eposta', coachData.eposta)
-        .in('rol', ['koç', 'admin']) // '.eq('rol', 'koç')' yerine bu satır geldi.
+        .in('rol', ['koç', 'admin', 'Hoca'])
         .single();
         
       if(userError || !userData) {

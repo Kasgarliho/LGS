@@ -92,7 +92,6 @@ export function AddStudyPlanDialog({ open, onOpenChange, onSave }: AddStudyPlanD
               <SelectTrigger><SelectValue placeholder="Çalışma Türü Seç" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="Konu Tekrarı">Konu Tekrarı</SelectItem>
-                <SelectItem value="Soru Çözme">Soru Çözme</SelectItem>
                 <SelectItem value="Test Çözme">Test Çözme</SelectItem>
                 <SelectItem value="Ödev">Ödev</SelectItem>
                 <SelectItem value="Diğer">Diğer</SelectItem>

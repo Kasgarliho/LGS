@@ -9,6 +9,7 @@ import { playPurchaseSound, playConfirmSound, playFailSound } from "@/utils/soun
 
 export const useCoreData = (
   userId: string | null,
+  userName: string | null, 
   userRole: string | null,
   isInitialized: boolean,
   isMuted: boolean
@@ -28,18 +29,24 @@ export const useCoreData = (
   };
 
   useEffect(() => {
-    if (userRole === 'koç') {
+    // === DÜZELTME BURADA YAPILDI ===
+    // Rol kontrolünü büyük/küçük harfe duyarsız hale getiriyoruz.
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') { 
       const allAvatarIds = allAvatars.map(avatar => avatar.id);
       setUserAvatars(prev => ({ ...prev, unlocked: allAvatarIds }));
       setTotalPoints(9999);
       setStreak(99);
-      setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true })));
+      setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
+      setChallengeWins(1250); // Tüm rozetlerin açılması için galibiyet sayısı yükseltildi
       setIsCloudDataLoaded(true);
-      return;
+      return; 
     }
     
+    // NORMAL KULLANICI İÇİN VERİ ÇEKME VE YÜKLEME
     if (userId) {
       const fetchCoreData = async () => {
+        setIsCloudDataLoaded(false);
         const [cloudDataRes, winsDataRes] = await Promise.all([
           supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar').eq('id', userId).maybeSingle(),
           supabase.rpc('get_challenge_win_count', { p_user_id: userId })
@@ -47,9 +54,7 @@ export const useCoreData = (
 
         const { data: cloudData, error } = cloudDataRes;
         
-        if (winsDataRes.data) {
-          setChallengeWins(winsDataRes.data);
-        }
+        setChallengeWins(winsDataRes.data || 0);
 
         if (error || !cloudData) {
           setTotalPoints(storage.loadPoints(userId));
@@ -75,7 +80,7 @@ export const useCoreData = (
         setIsCloudDataLoaded(true);
       };
       fetchCoreData();
-    } else {
+    } else { // userId yoksa (giriş yapılmamışsa)
       setTotalPoints(0);
       setStreak(0);
       setStreakFreezes(0);
@@ -84,28 +89,46 @@ export const useCoreData = (
       setAchievements(initialAchievementsData);
       setIsCloudDataLoaded(true);
     }
-  }, [userId, userRole]);
-  
-  // =================================================================
-  // HATALI KOD BLOĞU BURADAN SİLİNDİ
-  // Her girişte bildirim çıkaran gereksiz useEffect bloğu kaldırıldı.
-  // Doğru mantık zaten checkAchievements fonksiyonunun içinde yer alıyor.
-  // =================================================================
+  }, [userId, userRole, userName]);
 
-  useEffect(() => { if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } }, [totalPoints, isInitialized, userId]);
-  useEffect(() => { if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } }, [streak, isInitialized, userId]);
-  useEffect(() => { if (isInitialized && userId) { storage.saveStreakFreezes(userId, streakFreezes); updateUserCloudData({ seri_dondurma: streakFreezes }); } }, [streakFreezes, isInitialized, userId]);
-  useEffect(() => { if (isInitialized && userId && userAvatars) { storage.saveUserAvatars(userId, userAvatars); updateUserCloudData({ avatar: userAvatars }); } }, [userAvatars, isInitialized, userId]);
+  useEffect(() => { 
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } 
+  }, [totalPoints, isInitialized, userId, userRole]);
+
+  useEffect(() => { 
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } 
+  }, [streak, isInitialized, userId, userRole]);
+
+  useEffect(() => { 
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    if (isInitialized && userId) { storage.saveStreakFreezes(userId, streakFreezes); updateUserCloudData({ seri_dondurma: streakFreezes }); } 
+  }, [streakFreezes, isInitialized, userId, userRole]);
+
+  useEffect(() => { 
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    if (isInitialized && userId && userAvatars) { storage.saveUserAvatars(userId, userAvatars); updateUserCloudData({ avatar: userAvatars }); } 
+  }, [userAvatars, isInitialized, userId, userRole]);
+
   useEffect(() => {
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
     if (isInitialized && userId && achievements.length > 0) {
       storage.saveAchievements(userId, achievements);
       const unlockedIds = achievements.filter(a => a.unlocked).map(a => a.id);
       if (unlockedIds.length > 0 || isCloudDataLoaded) updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
     }
-  }, [achievements, isInitialized, isCloudDataLoaded, userId]);
+  }, [achievements, isInitialized, isCloudDataLoaded, userId, userRole]);
+
 
   const handleBuyStreakFreeze = () => {
-    if (!userId || userRole === 'koç') return;
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
     const price = 200;
     if (totalPoints >= price) {
       setTotalPoints(prev => prev - price);
@@ -118,7 +141,8 @@ export const useCoreData = (
   };
 
   const handleBuyAvatar = (avatarId: string) => {
-    if (!userId || userRole === 'koç') return;
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
     const avatar = allAvatars.find(a => a.id === avatarId);
     if (!avatar || avatar.unlockMethod !== 'purchase') return;
     const price = avatar.price || 0;
@@ -142,7 +166,8 @@ export const useCoreData = (
   };
   
   const checkAchievements = (subjects: Subject[], trigger: { type: 'quiz' | 'questions' | 'english_unit', data?: any }) => {
-    if (!userId || userRole === 'koç') return;
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
     const locked = achievements.filter(a => !a.unlocked);
     if (locked.length === 0) return;
     const totalQuestions = subjects.reduce((sum, s) => sum + s.correct + s.incorrect, 0);

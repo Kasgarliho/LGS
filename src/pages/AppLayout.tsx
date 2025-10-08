@@ -16,7 +16,8 @@ import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
 import { useScheduler } from '@/hooks/useScheduler';
 
-type AppContextType =
+// BU TİP TANIMI ARTIK DIŞA AKTARILIYOR (EXPORT EDİLİYOR)
+export type AppContextType =
   ReturnType<typeof useAuth> &
   ReturnType<typeof useCoreData> &
   ReturnType<typeof useStudyData> &
@@ -43,7 +44,7 @@ export default function AppLayout() {
   const auth = useAuth(isMuted);
   const { userId, userName, userRole } = auth;
 
-  const coreData = useCoreData(userId, userRole, isInitialized, isMuted);
+  const coreData = useCoreData(userId, userName, userRole, isInitialized, isMuted);
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
     if (userRole === 'koç') return;
     coreData.setTotalPoints(prev => prev + (result.correct * 10));
@@ -115,43 +116,61 @@ export default function AppLayout() {
   useEffect(() => {
     if (userId && userRole !== 'koç') {
       const { lastActiveDate, setLastActiveDate } = studyData;
-      const { streakFreezes, setStreak, setStreakFreezes } = coreData;
+      const { streak, streakFreezes, setStreak, setStreakFreezes } = coreData;
       if (lastActiveDate) {
         const today = new Date();
         const todayStr = today.toLocaleDateString();
         if (lastActiveDate !== todayStr) {
-          const lastDate = new Date(lastActiveDate);
+          const lastDate = new Date();
+          try {
+            const dateParts = lastActiveDate.split('.').map(Number);
+            lastDate.setFullYear(dateParts[2], dateParts[1] - 1, dateParts[0]);
+          } catch (e) {
+             console.error("Tarih formatı hatası:", e);
+             return;
+          }
+
           const yesterday = new Date();
           yesterday.setDate(today.getDate() - 1);
           const yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0));
+
           if (lastDate.getTime() < yesterdayStart.getTime()) {
-            if (streakFreezes > 0) {
-              setStreakFreezes(prev => prev - 1);
-              setLastActiveDate(yesterday.toLocaleDateString());
-              toast.info("Bir gün ara verdin ama Seri Dondurma serini kurtardı! ❄️");
-            } else {
-              setStreak(0);
-              playFailSound(isMuted);
+            if (streak > 0) {
+              if (streakFreezes > 0) {
+                setStreakFreezes(prev => prev - 1);
+                setLastActiveDate(yesterday.toLocaleDateString());
+                toast.info("Bir gün ara verdin ama Seri Dondurma serini kurtardı! ❄️");
+              } else {
+                setStreak(0);
+                playFailSound(isMuted);
+                toast.error("Serin sıfırlandı! 😢");
+              }
             }
           }
         }
       }
     }
-  }, [userId, userRole, studyData.lastActiveDate]);
+  }, [userId, userRole, studyData.lastActiveDate, isMuted]);
+
 
   useEffect(() => {
     const requestPermissions = async () => {
-      await LocalNotifications.requestPermissions();
-      setIsInitialized(true)
+      try {
+        await LocalNotifications.requestPermissions();
+      } catch (e) {
+        console.error("Bildirim izni istenemedi.", e);
+      } finally {
+        setIsInitialized(true);
+      }
     };
     requestPermissions();
   }, []);
 
   useEffect(() => {
-    if (coreData.isCloudDataLoaded && userId && studyData.subjects.length > 0) {
+    if (coreData.isCloudDataLoaded && userId && studyData.subjects.length > 0 && userRole !== 'koç') {
       coreData.checkAchievements(studyData.subjects, { type: 'questions' });
     }
-  }, [coreData.isCloudDataLoaded, userId]);
+  }, [coreData.isCloudDataLoaded, userId, studyData.subjects, userRole]);
 
   useEffect(() => { storage.saveIsMuted(isMuted); }, [isMuted]);
   
@@ -204,7 +223,7 @@ export default function AppLayout() {
   return (
     <>
       {theme && (
-        <div className={`max-w-7xl mx-auto p-4 pb-24`}>
+        <div className="max-w-7xl mx-auto p-4 pb-24">
           <Header
             userName={userName}
             totalQuestions={totalQuestions}

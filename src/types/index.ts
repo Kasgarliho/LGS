@@ -1,15 +1,17 @@
 // src/types/index.ts
 
+export type StudyType = 'Konu Tekrarı' | 'Test Çözme' | 'Ödev' | 'Diğer';
+
 export interface Subject {
-  topics: any;
   id: string;
   name: string;
   description: string;
   icon: string;
-  color: string;
+  color: 'primary' | 'success' | 'warning';
   targetQuestions: number;
   correct: number;
   incorrect: number;
+  topics: string[];
 }
 
 export interface StudySession {
@@ -17,23 +19,10 @@ export interface StudySession {
   subjectId: string;
   duration: number; // in minutes
   questionsCompleted: number;
+  correctCount: number;
+  incorrectCount: number;
   date: Date;
   topic: string;
-  correctCount?: number;
-  incorrectCount?: number;
-}
-
-export interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  unlocked: boolean;
-  unlockedAt?: Date;
-  category: 'questions' | 'streak' | 'subject' | 'special';
-  requiredSubjectId?: string;
-  requiredQuestions?: number;
-  requirement?: string;
 }
 
 export interface Question {
@@ -44,11 +33,35 @@ export interface Question {
   question: string;
   options: string[];
   correctAnswer: number;
-  explanation?: string;
+  explanation: string;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlocked: boolean;
+  unlockedAt?: Date;
+  category: 'questions' | 'subject' | 'streak' | 'special';
+  requiredQuestions?: number;
+  requiredSubjectId?: string;
+  requirement?: string;
+}
+
+export interface SolvedStat {
+  subjectId: string;
+  topic: string;
+  correct: boolean;
+}
+
+export interface ManualScheduleEntry {
+  subject: string;
+  teacher: string;
 }
 
 export interface ManualSchedule {
-  [day: string]: { subject: string; teacher: string; }[];
+  [day: string]: ManualScheduleEntry[];
 }
 
 export interface UserAvatars {
@@ -61,6 +74,20 @@ export interface LearnedWords {
   unknown: string[];
 }
 
+export interface StudyPlanEntry {
+  id: string;
+  day: string;
+  timeRange: string;
+  subjectId: string;
+  studyType: StudyType;
+  details?: string;
+  notificationId?: number;
+}
+
+export interface CustomStudyPlan {
+  [day: string]: StudyPlanEntry[];
+}
+
 export interface DailyWordData {
   id: string;
   unit: number;
@@ -70,31 +97,23 @@ export interface DailyWordData {
   exampleMeaning: string;
 }
 
-export type StudyType = 'Konu Tekrarı' | 'Soru Çözme' | 'Test Çözme' | 'Ödev' | 'Diğer';
-
-export interface StudyPlanEntry {
-  id: string;
-  notificationId?: number;
-  day: string;
-  timeRange: string;
-  subjectId: string;
-  studyType: StudyType;
-  details?: string;
-}
-
-export interface CustomStudyPlan {
-  [day: string]: StudyPlanEntry[];
+export interface NotificationSettings {
+  challengeReminder: boolean;
+  bagReminder: {
+    enabled: boolean;
+    hour: number;
+    minute: number;
+  };
+  streakReminder: boolean;
+  studyPlanReminder: {
+    enabled: boolean;
+    minutesBefore: number;
+  };
 }
 
 export interface KnownUser {
   userId: string;
   userName: string;
-}
-
-export interface SolvedStat {
-  subjectId: string;
-  topic: string;
-  correct: boolean;
 }
 
 export interface ChallengeOpponent {

@@ -35,7 +35,7 @@ export default function QuestionSolver({ questions, subjects, onFinish, onClose 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          handleAnswerClick(-1); // Zaman dolduğunda yanlış cevap olarak kabul et
+          handleAnswerClick(-1);
           return 30;
         }
         return prev - 1;
@@ -142,7 +142,6 @@ export default function QuestionSolver({ questions, subjects, onFinish, onClose 
                 <Button key={index} variant={buttonVariant} className={`h-auto p-4 text-left justify-start text-wrap transition-all duration-300 ${extraClasses}`} onClick={() => handleAnswerClick(index)} disabled={showResult}>
                   <div className="flex items-center gap-3 w-full">
                     <span className="font-bold text-lg min-w-[32px] h-8 rounded-full bg-muted flex items-center justify-center">{String.fromCharCode(65 + index)}</span>
-                    {/* DÜZELTME: Metnin taşmasını önlemek için 'break-words' eklendi */}
                     <span className="flex-1 text-base text-wrap break-words">{option}</span>
                     {showResult && index === currentQuestion.correctAnswer && (<CheckCircle className="h-5 w-5 text-success-foreground" />)}
                     {showResult && index === selectedAnswer && selectedAnswer !== currentQuestion.correctAnswer && (<XCircle className="h-5 w-5 text-destructive-foreground" />)}
@@ -153,17 +152,17 @@ export default function QuestionSolver({ questions, subjects, onFinish, onClose 
           </div>
         </CardContent>
       </Card>
-      {showExplanationModal && (
-        <Dialog open={showExplanationModal} onOpenChange={setShowExplanationModal}>
-          <DialogContent className="max-w-md animate-slide-up-fade">
-            <DialogHeader>
-              <DialogTitle className={`text-xl ${isCorrect ? 'text-success' : 'text-destructive'}`}>{isCorrect ? 'Doğru!' : 'Yanlış!'}</DialogTitle>
-              {currentQuestion.explanation && (<DialogDescription>{currentQuestion.explanation}</DialogDescription>)}
-            </DialogHeader>
-            <Button onClick={handleNext} className="mt-4 w-full">{currentQuestionIndex < questions.length - 1 ? 'İleri' : 'Bitir'}</Button>
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={showExplanationModal} onOpenChange={setShowExplanationModal}>
+        <DialogContent className="max-w-md animate-slide-up-fade">
+          <DialogHeader>
+            <DialogTitle className={`text-xl ${isCorrect ? 'text-success' : 'text-destructive'}`}>{isCorrect ? 'Doğru!' : 'Yanlış!'}</DialogTitle>
+            <DialogDescription> 
+              {currentQuestion.explanation || (isCorrect ? 'Tebrikler!' : 'Bir dahaki sefere!')}
+            </DialogDescription>
+          </DialogHeader>
+          <Button onClick={handleNext} className="mt-4 w-full">{currentQuestionIndex < questions.length - 1 ? 'İleri' : 'Bitir'}</Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
