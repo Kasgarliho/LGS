@@ -7,7 +7,7 @@ import { useAuth } from "./hooks/useAuth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Shield } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import AppLayout, { useAppContext } from "./pages/AppLayout";
 import Index from "./pages/Index";
@@ -24,7 +24,7 @@ import StudentDetailPage from "./pages/StudentDetailPage";
 import SchedulePage from "./pages/SchedulePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import WordQuizPage from "./pages/WordQuizPage";
-import ProfileSwitcher from "./components/ProfileSwitcher";
+import ProfileSwitcher from "./components/ProfileSwitcher"; // Bu artık kullanılmayacak ama kalsın
 
 const queryClient = new QueryClient();
 
@@ -78,77 +78,68 @@ const coachRouter = createBrowserRouter([
 
 function AppController() {
   const auth = useAuth(false);
-  const { userId, userRole, authLoading, knownUsers, handleSwitchUser, showRegistration, handleRemoveKnownUser, handleStudentRegistration, handleCoachRegistration } = auth;
+  const { 
+    session, 
+    profile, 
+    authLoading, 
+    userRole,
+    username, setUsername,
+    password, setPassword,
+    newPassword, setNewPassword,
+    tempName, setTempName,
+    className, setClassName,
+    coachCode, setCoachCode,
+    handleLogin,
+    handleFirstTimeLogin
+  } = auth;
   
-  const [loginRole, setLoginRole] = useState<'student' | 'coach' | null>(null);
-
   if (authLoading) {
     return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Yükleniyor...</p></div>;
   }
 
-  if (!userId) {
+  if (!session) {
     return (
       <Dialog open={true}>
-        <DialogContent onPointerDownOutside={(e) => e.preventDefault()}>
-          {knownUsers.length > 0 && !auth.showNameModal ? (
-            <>
-              <DialogHeader><DialogTitle className="text-2xl">Profil Seç</DialogTitle><DialogDescription>Devam etmek için bir profil seç veya yeni bir hesapla giriş yap.</DialogDescription></DialogHeader>
-              <ProfileSwitcher 
-                knownUsers={knownUsers}
-                activeUserId={userId}
-                onSwitch={handleSwitchUser}
-                onRemove={handleRemoveKnownUser}
-                onAddNew={showRegistration}
-              />
-            </>
-          ) : (
-            <>
-              {!loginRole ? (
-                <>
-                  <DialogHeader><DialogTitle className="text-2xl">Sisteme Giriş</DialogTitle><DialogDescription>Devam etmek için rolünü seç.</DialogDescription></DialogHeader>
-                  <div className="grid grid-cols-2 gap-4 py-4">
-                    <Button variant="outline" className="h-24 flex flex-col gap-2" onClick={() => setLoginRole('student')}>
-                      <User className="h-8 w-8" /> Öğrenciyim
-                    </Button>
-                    <Button variant="outline" className="h-24 flex flex-col gap-2" onClick={() => setLoginRole('coach')}>
-                      <Shield className="h-8 w-8" /> Koçum
-                    </Button>
-                  </div>
-                  {knownUsers.length > 0 && (<Button variant="ghost" className="w-full" onClick={() => auth.setShowNameModal(false)}>Geri</Button>)}
-                </>
-              ) : loginRole === 'student' ? (
-                <>
-                  <DialogHeader><DialogTitle className="text-2xl">Öğrenci Girişi</DialogTitle><DialogDescription>Devam etmek için bilgilerini ve koç kodunu gir.</DialogDescription></DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <Input placeholder="Adın Soyadın..." value={auth.tempName} onChange={(e) => auth.setTempName(e.target.value)} />
-                    <Input placeholder="Sınıfın (Örn: 8A)" value={auth.className} onChange={(e) => auth.setClassName(e.target.value)} />
-                    <Input placeholder="Koç Kodu" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleStudentRegistration()} />
-                    <Button onClick={handleStudentRegistration} disabled={!auth.tempName.trim() || !auth.className.trim() || !auth.coachCode.trim()} className="w-full">Giriş Yap</Button>
-                    <Button variant="ghost" className="w-full" onClick={() => setLoginRole(null)}>Geri</Button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <DialogHeader><DialogTitle className="text-2xl">Koç Girişi</DialogTitle><DialogDescription>Devam etmek için size özel koç kodunu ve şifrenizi girin.</DialogDescription></DialogHeader>
-                  <div className="py-4 space-y-4">
-                    <Input placeholder="Koç Kodu" value={auth.coachCode} onChange={(e) => auth.setCoachCode(e.target.value)} />
-                    <Input type="password" placeholder="Şifre" value={auth.tempPassword} onChange={(e) => auth.setTempPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleCoachRegistration()} />
-                    <Button onClick={handleCoachRegistration} disabled={!auth.coachCode.trim() || !auth.tempPassword.trim()} className="w-full">Giriş Yap</Button>
-                    <Button variant="ghost" className="w-full" onClick={() => setLoginRole(null)}>Geri</Button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
+        <DialogContent onPointerDownOutside={(e) => e.preventDefault()} className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">LGS Asistanı</DialogTitle>
+          </DialogHeader>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="login">Giriş Yap</TabsTrigger>
+              <TabsTrigger value="register">İlk Girişim</TabsTrigger>
+            </TabsList>
+            <TabsContent value="login" className="pt-4">
+              <DialogDescription className="text-center mb-4">Kullanıcı adın ve şifrenle giriş yap.</DialogDescription>
+              <div className="space-y-4">
+                <Input placeholder="Kullanıcı Adı" value={username} onChange={(e) => setUsername(e.target.value)} />
+                <Input type="password" placeholder="Şifre" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
+                <Button onClick={handleLogin} className="w-full">Giriş Yap</Button>
+              </div>
+            </TabsContent>
+            <TabsContent value="register" className="pt-4">
+               <DialogDescription className="text-center mb-4">Daha önce şifre oluşturmadıysan, aşağıdaki bilgileri doldurarak yeni bir şifre belirle.</DialogDescription>
+              <div className="space-y-3">
+                <Input placeholder="Adın Soyadın..." value={tempName} onChange={(e) => setTempName(e.target.value)} />
+                <Input placeholder="Sınıfın (Örn: 8A)" value={className} onChange={(e) => setClassName(e.target.value)} />
+                <Input placeholder="Koç Kodu" value={coachCode} onChange={(e) => setCoachCode(e.target.value)} />
+                <Input type="password" placeholder="Yeni Şifreni Gir..." value={newPassword} onChange={(e) => setNewPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleFirstTimeLogin()} />
+                <Button onClick={handleFirstTimeLogin} className="w-full">Hesabımı Oluştur</Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     );
   }
 
-  // GÜNCELLEME: Artık 'admin' rolünü de kontrol ediyor.
-  const isCoachOrAdmin = userRole?.toLowerCase() === 'koç' || userRole?.toLowerCase() === 'admin';
+  if (profile) {
+    const lowerCaseRole = userRole?.toLowerCase();
+    const isCoachOrAdmin = lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca';
+    return isCoachOrAdmin ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
+  }
 
-  return isCoachOrAdmin ? <RouterProvider router={coachRouter} /> : <RouterProvider router={studentRouter} />;
+  return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Profil Yükleniyor...</p></div>;
 }
 
 const App = () => {

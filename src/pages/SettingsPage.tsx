@@ -8,10 +8,11 @@ import { Link } from "react-router-dom";
 import { useAppContext } from "./AppLayout";
 import { Button } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // DialogDescription'ı farklı bir isimle import et
+import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import  ProfileSwitcher  from "@/components/ProfileSwitcher";
+import PasswordResetTool from "@/components/PasswordResetTool";
 
 export const SettingsPage = () => {
   const { 
@@ -28,11 +29,12 @@ export const SettingsPage = () => {
     handleChangePassword 
   } = useAppContext();
 
-  // YENİ: Şifre formu için state'ler
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const isCoachOrAdmin = userRole?.toLowerCase() === 'koç' || userRole?.toLowerCase() === 'admin' || userRole?.toLowerCase() === 'hoca';
 
   if (!notificationSettings) {
     return <div>Yükleniyor...</div>;
@@ -48,12 +50,18 @@ export const SettingsPage = () => {
       return;
     }
     
-    const success = await handleChangePassword(currentPassword, newPassword);
-    if (success) {
-      setIsPasswordDialogOpen(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+    // handleChangePassword'ın useAuth'tan gelmesi gerekiyor. Eğer AppContext'te yoksa eklenmeli.
+    // Şimdilik olduğunu varsayıyoruz.
+    if (handleChangePassword) {
+        const success = await handleChangePassword(currentPassword, newPassword);
+        if (success) {
+          setIsPasswordDialogOpen(false);
+          setCurrentPassword("");
+          setNewPassword("");
+          setConfirmPassword("");
+        }
+    } else {
+        toast.error("Şifre değiştirme fonksiyonu bulunamadı.");
     }
   };
 
@@ -72,7 +80,7 @@ export const SettingsPage = () => {
           <CardDescription>Aktif kullanıcı: <span className="font-semibold">{userName || 'Giriş yapılmadı'}</span></CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-            {(userRole === 'koç' || userRole === 'admin') && (
+            {isCoachOrAdmin && (
                 <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
                     <DialogTrigger asChild>
                         <Button variant="outline" className="w-full"><KeyRound className="h-4 w-4 mr-2" />Şifre Değiştir</Button>
@@ -104,7 +112,7 @@ export const SettingsPage = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleLogout(false)}>Çıkış Yap</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleLogout()}>Çıkış Yap</AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -233,6 +241,12 @@ export const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {isCoachOrAdmin && (
+        <div className="pt-4">
+          <PasswordResetTool />
+        </div>
+      )}
     </div>
   );
 };
