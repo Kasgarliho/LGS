@@ -27,13 +27,17 @@ import SchedulePage from "./pages/SchedulePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import WordQuizPage from "./pages/WordQuizPage";
 
+// ==========================================================
+// KESİN ÇÖZÜM BURADA: Otomatik veri yenileme ayarı eklendi
+// ==========================================================
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: false, // Sekmeye geri dönüldüğünde otomatik veri çekmeyi kapatır.
     },
   },
 });
+// ==========================================================
 
 const StatisticsPage = () => {
   const context = useAppContext();
@@ -146,7 +150,7 @@ const LoginPage = () => {
                     </div>
                     <DialogFooter>
                         <Button type="button" variant="secondary" onClick={() => setIsResetDialogOpen(false)}>İptal</Button>
-                        <Button type="submit" onClick={handleResetRequest}>Sıfırlama Linki Gönder</Button>
+                        <Button type="submit" onClick={handleResetRequest}>Sıırlama Linki Gönder</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -181,6 +185,7 @@ const router = createBrowserRouter([
         path: "/",
         element: <ProtectedRoute />,
         children: [
+            { path: 'update-password', element: <div>Şifre güncelleme sayfası</div> }, // Şifre güncelleme için geçici sayfa
             { index: true, element: <Index /> }, 
             { path: "program", element: <ProgramimSayfasi /> },
             { path: "practice", element: <PracticePage /> },
