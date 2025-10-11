@@ -29,8 +29,11 @@ export const useCoreData = (
   };
 
   useEffect(() => {
-    // === DÜZELTME BURADA YAPILDI ===
-    // Rol kontrolünü büyük/küçük harfe duyarsız hale getiriyoruz.
+    if (!userId) {
+      setIsCloudDataLoaded(true);
+      return; 
+    }
+
     const lowerCaseRole = userRole?.toLowerCase();
     if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') { 
       const allAvatarIds = allAvatars.map(avatar => avatar.id);
@@ -38,14 +41,13 @@ export const useCoreData = (
       setTotalPoints(9999);
       setStreak(99);
       setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
-      setChallengeWins(1250); // Tüm rozetlerin açılması için galibiyet sayısı yükseltildi
+      setChallengeWins(999);
       setIsCloudDataLoaded(true);
       return; 
     }
     
-    // NORMAL KULLANICI İÇİN VERİ ÇEKME VE YÜKLEME
-    if (userId) {
-      const fetchCoreData = async () => {
+    const fetchCoreData = async () => {
+      try {
         setIsCloudDataLoaded(false);
         const [cloudDataRes, winsDataRes] = await Promise.all([
           supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar').eq('id', userId).maybeSingle(),
@@ -54,7 +56,8 @@ export const useCoreData = (
 
         const { data: cloudData, error } = cloudDataRes;
         
-        setChallengeWins(winsDataRes.data || 0);
+        if (winsDataRes.error) console.error("Challenge kazanma sayısı çekilirken hata:", winsDataRes.error);
+        else setChallengeWins(winsDataRes.data || 0);
 
         if (error || !cloudData) {
           setTotalPoints(storage.loadPoints(userId));
@@ -69,62 +72,59 @@ export const useCoreData = (
           setStreakFreezes(cloudData.seri_dondurma ?? 0);
           try {
             const parsedAvatars = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar;
-            setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : storage.loadUserAvatars(userId));
+            setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : { current: 'default', unlocked: ['default'] });
           } catch (e) {
-            setUserAvatars(storage.loadUserAvatars(userId));
+            setUserAvatars({ current: 'default', unlocked: ['default'] });
           }
           const unlockedAchievementIds = new Set(cloudData.kazanilan_basarimlar || []);
           const syncedAchievements = initialAchievementsData.map(ach => ({ ...ach, unlocked: unlockedAchievementIds.has(ach.id) }));
           setAchievements(syncedAchievements);
         }
-        setIsCloudDataLoaded(true);
-      };
-      fetchCoreData();
-    } else { // userId yoksa (giriş yapılmamışsa)
-      setTotalPoints(0);
-      setStreak(0);
-      setStreakFreezes(0);
-      setChallengeWins(0);
-      setUserAvatars({ current: 'default', unlocked: ['default'] });
-      setAchievements(initialAchievementsData);
-      setIsCloudDataLoaded(true);
-    }
+      } catch (e) {
+          console.error("fetchCoreData içinde beklenmedik bir hata oluştu:", e);
+      } finally {
+          setIsCloudDataLoaded(true);
+      }
+    };
+    fetchCoreData();
+
   }, [userId, userRole, userName]);
 
   useEffect(() => { 
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
-    if (isInitialized && userId) { storage.savePoints(userId, totalPoints); updateUserCloudData({ puan: totalPoints }); } 
-  }, [totalPoints, isInitialized, userId, userRole]);
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+      storage.savePoints(userId, totalPoints); 
+      updateUserCloudData({ puan: totalPoints }); 
+    } 
+  }, [totalPoints, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
-    if (isInitialized && userId) { storage.saveStreak(userId, streak); updateUserCloudData({ seri: streak }); } 
-  }, [streak, isInitialized, userId, userRole]);
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+      storage.saveStreak(userId, streak); 
+      updateUserCloudData({ seri: streak }); 
+    } 
+  }, [streak, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
-    if (isInitialized && userId) { storage.saveStreakFreezes(userId, streakFreezes); updateUserCloudData({ seri_dondurma: streakFreezes }); } 
-  }, [streakFreezes, isInitialized, userId, userRole]);
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+      storage.saveStreakFreezes(userId, streakFreezes); 
+      updateUserCloudData({ seri_dondurma: streakFreezes }); 
+    } 
+  }, [streakFreezes, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
-    if (isInitialized && userId && userAvatars) { storage.saveUserAvatars(userId, userAvatars); updateUserCloudData({ avatar: userAvatars }); } 
-  }, [userAvatars, isInitialized, userId, userRole]);
+    if (isInitialized && userId && userAvatars && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+      storage.saveUserAvatars(userId, userAvatars); 
+      updateUserCloudData({ avatar: userAvatars }); 
+    } 
+  }, [userAvatars, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => {
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
-    if (isInitialized && userId && achievements.length > 0) {
+    if (isInitialized && userId && achievements.length > 0 && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') {
       storage.saveAchievements(userId, achievements);
       const unlockedIds = achievements.filter(a => a.unlocked).map(a => a.id);
-      if (unlockedIds.length > 0 || isCloudDataLoaded) updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
+      updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
     }
   }, [achievements, isInitialized, isCloudDataLoaded, userId, userRole]);
-
 
   const handleBuyStreakFreeze = () => {
     const lowerCaseRole = userRole?.toLowerCase();

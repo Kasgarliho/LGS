@@ -7,7 +7,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
-// Veri tiplerini tanımlıyoruz
 interface SubjectStat {
   subject_id: string;
   subject_name: string;

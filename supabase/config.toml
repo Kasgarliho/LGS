@@ -31,3 +31,14 @@ entrypoint = "./functions/sifre-sifirla/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/sifre-sifirla/*.html" ]
+
+[functions.ilk-giris]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ilk-giris/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/ilk-giris/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/ilk-giris/*.html" ]

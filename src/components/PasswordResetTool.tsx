@@ -27,7 +27,7 @@ export default function PasswordResetTool() {
     const fetchStudents = async () => {
       setLoading(true);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('kullanicilar')
         .select('id, ad_soyad')
         .eq('rol', 'ogrenci')
         .order('ad_soyad', { ascending: true });

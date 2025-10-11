@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"; // YENİ
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Crown, Medal, Award, CheckCircle, PlusCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from './AppLayout';
 import { startOfWeek, endOfWeek, format, addDays, isSameWeek } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import ChallengeHistory from '@/components/ChallengeHistory'; // YENİ
+import ChallengeHistory from '@/components/ChallengeHistory';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -35,12 +35,21 @@ export default function LeaderboardPage() {
     const fetchLeaderboard = async () => {
       setLoading(true);
       setError(null);
-      const { data, error: rpcError } = await supabase.rpc('get_weekly_leaderboard_for_date', { p_date_in_week: selectedDate.toISOString() });
+
+      // === DEĞİŞİKLİK BURADA YAPILDI ===
+      // Tarihi, veritabanının beklediği 'YYYY-MM-DD' formatına çeviriyoruz.
+      const dateForQuery = selectedDate.toISOString().split('T')[0];
+
+      const { data, error: rpcError } = await supabase.rpc('get_weekly_leaderboard_for_date', { 
+        p_date_in_week: dateForQuery 
+      });
+      // ===============================
+
       if (rpcError) {
         console.error("Liderlik tablosu çekilirken hata:", rpcError);
         setError("Liderlik tablosu verileri yüklenemedi.");
       } else if (data) {
-        setLeaderboard(data);
+        setLeaderboard(data as any);
       }
       setLoading(false);
     };

@@ -1,26 +1,38 @@
-// src/pages/Index.tsx
-
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAppContext } from '@/pages/AppLayout';
 import SubjectCard from '@/components/SubjectCard';
 import DailyQuote from '@/components/ui/DailyQuote';
 import LgsCountdown from '@/components/ui/LgsCountdown';
-import { useAppContext } from '@/pages/AppLayout';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Briefcase } from 'lucide-react';
 
 const Index = () => {
-  const { subjects, handleAddQuestions, tomorrowSubjects, isEvening } = useAppContext();
+  const { subjects, handleAddQuestions, tomorrowSubjects, isEvening, userRole } = useAppContext();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (userRole) {
+      const lowerCaseRole = userRole.toLowerCase();
+      if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
+        navigate('/coach', { replace: true });
+      }
+    }
+  }, [userRole, navigate]);
+  
+  const lowerCaseRole = userRole?.toLowerCase();
+  if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
+    return <div className="text-center p-8">Koç Paneline Yönlendiriliyor...</div>;
+  }
 
   return (
     <div className="space-y-6">
       <LgsCountdown />
-
-      {isEvening && tomorrowSubjects.length > 0 && (
+      {isEvening && tomorrowSubjects && tomorrowSubjects.length > 0 && (
         <div className="animate-pulse">
           <Card className="card-canli gradient-turuncu shadow-lg border-none">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium metin-beyaz">
-                Yarınki Derslerin
-              </CardTitle>
+              <CardTitle className="text-sm font-medium metin-beyaz">Yarınki Derslerin</CardTitle>
               <Briefcase className="h-4 w-4 metin-acik-gri" />
             </CardHeader>
             <CardContent>
@@ -30,17 +42,18 @@ const Index = () => {
           </Card>
         </div>
       )}
-
       <DailyQuote />
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {subjects.map((subject) => (
-          <SubjectCard 
-            key={subject.id} 
-            subject={subject} 
-            onAddQuestions={handleAddQuestions} 
-          />
-        ))}
-      </div>
+      {subjects && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {subjects.map((subject) => (
+            <SubjectCard 
+              key={subject.id} 
+              subject={subject} 
+              onAddQuestions={handleAddQuestions} 
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

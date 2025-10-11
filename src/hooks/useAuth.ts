@@ -3,214 +3,244 @@ import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 import { playIntroSound, playSuccessSound, playFailSound } from '@/utils/sounds';
-import { storage, KnownUser } from '@/utils/storage';
+
+// Helper function to sanitize coach codes for matching
+const sanitizeCoachCode = (text: string) => {
+  if (!text) return "";
+  return text
+    .trim()
+    .toUpperCase()
+    .replace(/ /g, '')
+    .replace(/İ/g, 'I')
+    .replace(/Ş/g, 'S')
+    .replace(/Ğ/g, 'G')
+    .replace(/Ü/g, 'U')
+    .replace(/Ö/g, 'O')
+    .replace(/Ç/g, 'C');
+};
+
+// Helper function to generate a username from a full name
+const generateUsername = (fullName: string) => {
+  if (!fullName) return "";
+  return fullName
+    .trim()
+    .toLowerCase()
+    .replace(/ /g, '')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
+};
 
 export const useAuth = (isMuted: boolean) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   
-  const [knownUsers, setKnownUsers] = useState<KnownUser[]>(() => storage.loadKnownUsers());
-  const [showNameModal, setShowNameModal] = useState(false);
-  
-  const [tempName, setTempName] = useState("");
-  const [className, setClassName] = useState("");
-  const [coachCode, setCoachCode] = useState("");
-
+  // Login form state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
 
+  // New Registration form state
+  const [regFullName, setRegFullName] = useState("");
+  const [regClassName, setRegClassName] = useState("");
+  const [regCoachCode, setRegCoachCode] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      if (session) {
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        setProfile(userProfile);
-        
-        if (userProfile) {
-            updateKnownUsers({ userId: userProfile.id, userName: userProfile.ad_soyad });
+    const initializeAndListen = async () => {
+      try {
+        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        setSession(initialSession);
+        if (initialSession?.user) {
+          const { data: userProfile } = await supabase.from('kullanicilar').select('*').eq('id', initialSession.user.id).single();
+          setProfile(userProfile || null);
         }
+      } catch (error) {
+        console.error("Oturum başlatılırken hata:", error);
+      } finally {
+        setAuthLoading(false);
       }
-      setAuthLoading(false);
-    };
 
-    fetchSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session) {
-          const { data: userProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          setProfile(userProfile);
-          if (userProfile) {
-              updateKnownUsers({ userId: userProfile.id, userName: userProfile.ad_soyad });
-          }
-      } else {
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (_event, newSession) => {
+          setAuthLoading(true);
+          setSession(newSession);
           setProfile(null);
-      }
-    });
-
-    return () => {
-      authListener.subscription.unsubscribe();
+          if (newSession?.user) {
+            const { data: userProfile } = await supabase.from('kullanicilar').select('*').eq('id', newSession.user.id).single();
+            setProfile(userProfile || null);
+          }
+          setAuthLoading(false);
+        }
+      );
+      return () => { authListener.subscription.unsubscribe(); };
     };
-  }, []);
 
-  const updateKnownUsers = (user: KnownUser) => {
-    const currentUsers = storage.loadKnownUsers();
-    const userExists = currentUsers.some(u => u.userId === user.userId);
-    if (!userExists) {
-      const updatedUsers = [...currentUsers, user];
-      setKnownUsers(updatedUsers);
-      storage.saveKnownUsers(updatedUsers);
-    }
-  };
+    const subscriptionPromise = initializeAndListen();
+    return () => { subscriptionPromise.then(cleanup => cleanup && cleanup()); };
+  }, []);
 
   const handleLogin = async () => {
     if (!username || !password) {
-        toast.error("Kullanıcı adı ve şifre alanları boş bırakılamaz.");
-        return;
+      toast.error("Kullanıcı adı ve şifre alanları boş bırakılamaz.");
+      return;
     }
-    const email = username.toLowerCase() + '@lgs.app';
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('kullanicilar')
+        .select('email')
+        .eq('kullanici_adi', username.toLowerCase())
+        .single();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+      if (userError || !userData) {
+        throw new Error("Kullanıcı adı veya şifre hatalı.");
+      }
 
-    if (error) {
-      toast.error("Giriş başarısız. Kullanıcı adı veya şifre hatalı.");
-    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userData.email,
+        password: password,
+      });
+
+      if (signInError) {
+        throw new Error("Kullanıcı adı veya şifre hatalı.");
+      }
       playIntroSound(isMuted);
+
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+  
+  const handleNewStudentRegistration = async (): Promise<boolean> => {
+    if (!regFullName || !regClassName || !regCoachCode || !regEmail || !regPassword || !regConfirmPassword) {
+      toast.error("Tüm alanları doldurmalısınız.");
+      return false;
+    }
+    if (regPassword !== regConfirmPassword) {
+      toast.error("Şifreler uyuşmuyor.");
+      return false;
+    }
+    if (regPassword.length < 6) {
+      toast.error("Şifreniz en az 6 karakter olmalıdır.");
+      return false;
+    }
+
+    try {
+      const finalFullName = regFullName.trim();
+      const finalClassName = regClassName.trim();
+      const finalCoachCode = sanitizeCoachCode(regCoachCode);
+
+      const { data: preRegData, error: preRegError } = await supabase
+        .from('onkayit_ogrenciler')
+        .select('*')
+        .ilike('ad_soyad', finalFullName)
+        .ilike('sinif', finalClassName)
+        .ilike('koc_kodu', finalCoachCode)
+        .single();
+        
+      if (preRegError || !preRegData) {
+        throw new Error("Ön kayıt bulunamadı. Lütfen Ad Soyad, Sınıf ve Koç Kodu bilgilerinizi kontrol edin.");
+      }
+      if (preRegData.kayit_tamamlandi) {
+        throw new Error("Bu öğrenci için zaten bir hesap oluşturulmuş.");
+      }
+
+      const generatedUsername = generateUsername(finalFullName);
+      
+      const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+        email: regEmail,
+        password: regPassword,
+        options: {
+          data: {
+            ad_soyad: finalFullName,
+            koc_kodu: finalCoachCode 
+          }
+        }
+      });
+      if (signUpError) throw signUpError;
+      if (!user) throw new Error("Kullanıcı oluşturulamadı, lütfen tekrar deneyin.");
+
+      const { error: updateError } = await supabase
+        .from('kullanicilar')
+        .update({
+          rol: 'ogrenci',
+          kullanici_adi: generatedUsername
+        })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+      
+      const { error: preRegUpdateError } = await supabase
+        .from('onkayit_ogrenciler')
+        .update({ kayit_tamamlandi: true })
+        .eq('id', preRegData.id);
+      if (preRegUpdateError) throw preRegUpdateError;
+
+      toast.success("Hesabın başarıyla oluşturuldu!", {
+        description: `Kullanıcı adın: ${generatedUsername}. Bu kullanıcı adı ve şifrenle giriş yapabilirsin.`,
+        duration: 10000
+      });
+      return true;
+      
+    } catch (error: any) {
+      toast.error(error.message);
+      return false;
     }
   };
 
-  const handleLogout = async () => {
+  const handlePasswordResetRequest = async (email: string) => {
+    if (!email) {
+      toast.error("Lütfen e-posta adresinizi girin.");
+      return false;
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: 'http://localhost:8080/update-password',
+      });
+      if (error) throw error;
+      toast.success("Şifre sıfırlama e-postası gönderildi!", {
+        description: "Lütfen e-posta kutunuzu kontrol edin.",
+      });
+      return true;
+    } catch (error: any) {
+      toast.error("Bir hata oluştu:", { description: error.message });
+      return false;
+    }
+  };
+
+  const handleLogout = async () => { 
     await supabase.auth.signOut();
   };
-  
-  const handleFirstTimeLogin = async () => {
-     const finalName = tempName.trim().toUpperCase();
-     const finalClassName = className.trim().toUpperCase();
-     const finalCoachCode = coachCode.trim().toUpperCase();
 
-     if (!finalName || !finalClassName || !finalCoachCode || !newPassword) {
-         toast.error("Tüm alanları ve yeni şifrenizi doldurmalısınız.");
-         return;
-     }
-     if (newPassword.length < 6) {
-         toast.error("Şifreniz en az 6 karakter olmalıdır.");
-         return;
-     }
-
-     const { error } = await supabase.rpc('ilk_ogrenci_girisi_ve_sifre_olustur', {
-         p_ad_soyad: finalName,
-         p_sinif: finalClassName,
-         p_koc_kodu: finalCoachCode,
-         p_yeni_sifre: newPassword
-     });
-
-     if (error) {
-         toast.error(error.message);
-         console.error("İlk giriş hatası:", error);
-     } else {
-         toast.success("Hesabın başarıyla oluşturuldu! Şimdi 'Giriş Yap' ekranından giriş yapabilirsin.");
-     }
-  };
-
-  // =================================================================
-  // YENİ EKLENEN ŞİFRE DEĞİŞTİRME FONKSİYONU
-  // =================================================================
-  const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
-    // 1. Mevcut şifrenin doğru olup olmadığını kontrol et
-    // Bunun için kullanıcının e-postasıyla tekrar giriş yapmayı deneriz.
-    if (!session?.user.email) {
-        toast.error("Kullanıcı oturumu bulunamadı.");
-        return false;
-    }
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: session.user.email,
-        password: currentPassword
-    });
-
-    if (signInError) {
-        playFailSound(isMuted);
-        toast.error("Mevcut şifreniz yanlış!");
-        return false;
-    }
-
-    // 2. Mevcut şifre doğruysa, yeni şifreyi ayarla
-    const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-    });
-    
-    if (updateError) {
-        toast.error("Şifre güncellenirken bir hata oluştu.");
-        console.error("Şifre güncelleme hatası:", updateError);
-        return false;
-    }
-
-    playSuccessSound(isMuted);
-    toast.success("Şifreniz başarıyla güncellendi!");
-    return true;
-  };
-
-  const handleSwitchUser = async (userId: string) => {
-    await handleLogout();
-    const userToSwitch = knownUsers.find(u => u.userId === userId);
-    if(userToSwitch) {
-        const studentProfile = await supabase.from('ogrenciler').select('kullanici_adi').eq('baglanan_kullanici_id', userId).single();
-        if(studentProfile.data?.kullanici_adi) {
-            setUsername(studentProfile.data.kullanici_adi);
-        }
-    }
-  };
-
-  const handleRemoveKnownUser = (userIdToRemove: string) => {
-    const updatedKnownUsers = knownUsers.filter(u => u.userId !== userIdToRemove);
-    storage.saveKnownUsers(updatedKnownUsers);
-    setKnownUsers(updatedKnownUsers);
-    toast.info("Profil, cihazın hatırlananlar listesinden kaldırıldı.");
-    if (profile?.id === userIdToRemove) {
-      handleLogout();
-    }
+  const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => { 
+    if (!profile?.email) { toast.error("Kullanıcı oturumu bulunamadı."); return false; }
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: profile.email, password: currentPassword });
+    if (signInError) { playFailSound(isMuted); toast.error("Mevcut şifreniz yanlış!"); return false; }
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+    if (updateError) { toast.error("Şifre güncellenirken bir hata oluştu."); return false; }
+    playSuccessSound(isMuted); toast.success("Şifreniz başarıyla güncellendi!");
+    return true; 
   };
   
-  const showRegistration = () => {};
-
   return {
-    session,
-    profile,
-    authLoading,
-    userId: profile?.id ?? null,
-    userName: profile?.ad_soyad ?? null,
-    userRole: profile?.rol ?? null,
-    
-    knownUsers,
-    showNameModal,
-    
+    session, profile, authLoading,
+    userId: profile?.id ?? null, userName: profile?.ad_soyad ?? null, userRole: profile?.rol ?? null,
     username, setUsername,
     password, setPassword,
-    newPassword, setNewPassword,
-    tempName, setTempName,
-    className, setClassName,
-    coachCode, setCoachCode,
-    
     handleLogin,
+    regFullName, setRegFullName,
+    regClassName, setRegClassName,
+    regCoachCode, setRegCoachCode,
+    regEmail, setRegEmail,
+    regPassword, setRegPassword,
+    regConfirmPassword, setRegConfirmPassword,
+    handleNewStudentRegistration,
+    handlePasswordResetRequest,
     handleLogout,
-    handleFirstTimeLogin,
-    handleSwitchUser,
-    handleRemoveKnownUser,
-    showRegistration,
-    handleChangePassword, // Eklendi
+    handleChangePassword,
   };
 };

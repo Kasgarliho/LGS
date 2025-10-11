@@ -1,8 +1,11 @@
+// src/components/SubjectCard.tsx
+
 import { useState } from "react";
 import { Subject } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+// Düzeltme: DialogHeader'da DialogDescription'ı kullanmak için içeri alıyoruz
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"; 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -121,6 +124,10 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Soru Ekle - {subject.name}</DialogTitle>
+                {/* KRİTİK DÜZELTME: DialogDescription eklendi */}
+                <DialogDescription>
+                    Çözdüğün soru sayılarını gir ve hangi konuyu çalıştığını belirt.
+                </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">

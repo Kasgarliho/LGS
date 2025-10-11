@@ -1,3 +1,5 @@
+// src/hooks/useScheduler.ts
+
 import { useEffect, useMemo, useState } from 'react';
 import { storage, NotificationSettings } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
@@ -7,7 +9,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { subjects as allSubjectsData } from '@/data/subjects';
 
 const weekDaysForLookup = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-const CHALLENGE_NOTIFICATION_ID = 999; // Bildirimi iptal edebilmek için sabit bir ID
+const CHALLENGE_NOTIFICATION_ID = 999;
 
 export const useScheduler = (userId: string | null, isInitialized: boolean) => {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(storage.loadNotificationSettings());
@@ -25,6 +27,7 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
 
   const isEvening = useMemo(() => new Date().getHours() >= 19, []);
 
+  // GÜNCELLENDİ: Hata alsa bile duracak şekilde updateUserCloudData
   const updateUserCloudData = async (dataToUpdate: object) => {
     if (!userId || !isInitialized) return;
     const { error } = await supabase.from('kullanicilar').update(dataToUpdate).eq('id', userId);
@@ -36,7 +39,7 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
     setManualSchedule(storage.loadManualSchedule());
 
     if(userId) {
-       setCustomPlan(storage.loadCustomStudyPlan(userId));
+       // Cloud'dan customPlan çekme
        supabase
         .from('kullanicilar')
         .select('calisma_programi')
@@ -45,6 +48,10 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
         .then(({ data }) => {
           if(data && data.calisma_programi) {
             setCustomPlan(data.calisma_programi);
+            storage.saveCustomStudyPlan(userId, data.calisma_programi); // Lokal yedeği de güncelle
+          } else {
+             // Cloud'da yoksa lokalden çek (bu genelde ilk girişte olur)
+             setCustomPlan(storage.loadCustomStudyPlan(userId));
           }
         });
     } else {
@@ -52,17 +59,26 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
     }
   }, [userId]);
 
-  // YENİ: Meydan okuma bildirimini kuran useEffect
+  // GÜNCELLEME: customPlan değiştiğinde sadece kaydetme
+  useEffect(() => { 
+    if (isInitialized && userId) { 
+        storage.saveCustomStudyPlan(userId, customPlan); 
+        // Plan değiştiğinde buluta kaydet
+        if (customPlan !== null) {
+            updateUserCloudData({ calisma_programi: customPlan }); 
+        }
+    } 
+  }, [customPlan, isInitialized, userId]);
+
+
   useEffect(() => {
     const scheduleChallengeNotification = async () => {
-      // Önceki meydan okuma bildirimini her zaman iptal et
       await LocalNotifications.cancel({ notifications: [{ id: CHALLENGE_NOTIFICATION_ID }] });
 
-      // Eğer ayar açıksa, 3 gün sonrasına yeni bir bildirim kur
       if (notificationSettings.challengeReminder) {
         const scheduleDate = new Date();
         scheduleDate.setDate(scheduleDate.getDate() + 3);
-        scheduleDate.setHours(18, 0, 0, 0); // Akşam 6'da gönderilsin
+        scheduleDate.setHours(18, 0, 0, 0);
 
         await LocalNotifications.schedule({
           notifications: [{
@@ -75,7 +91,6 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
       }
     };
 
-    // Uygulama başlatıldığında ve kullanıcı giriş yaptığında çalıştır
     if (isInitialized && userId) {
       scheduleChallengeNotification();
     }
@@ -84,7 +99,6 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
 
   useEffect(() => { if (isInitialized) storage.saveNotificationSettings(notificationSettings); }, [notificationSettings, isInitialized]);
   useEffect(() => { if (isInitialized && manualSchedule) storage.saveManualSchedule(manualSchedule); }, [manualSchedule, isInitialized]);
-  useEffect(() => { if (isInitialized && userId) { storage.saveCustomStudyPlan(userId, customPlan); updateUserCloudData({ calisma_programi: customPlan }); } }, [customPlan, isInitialized, userId]);
 
   const handleUpdateNotificationSettings = (settings: NotificationSettings) => setNotificationSettings(settings);
   
