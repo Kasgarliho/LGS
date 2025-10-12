@@ -6,7 +6,8 @@ import { englishQuestions } from "./english";
 import { revolutionQuestions } from "./revolution";
 import { religionQuestions } from "./religion";
 
-export const questions: Question[] = [
+// Tüm soru dizilerini tek bir büyük diziye toplayalım
+const allRawQuestions = [
   ...turkishQuestions,
   ...mathQuestions,
   ...scienceQuestions,
@@ -14,3 +15,7 @@ export const questions: Question[] = [
   ...revolutionQuestions,
   ...religionQuestions,
 ];
+
+// Olası kopyala-yapıştır hatalarından kaynaklanan 'boş' veya 'tanımsız' verileri
+// diziden otomatik olarak temizleyen akıllı bir filtre ekleyelim.
+export const questions: Question[] = allRawQuestions.filter(question => question);

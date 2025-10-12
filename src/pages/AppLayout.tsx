@@ -38,7 +38,8 @@ export default function AppLayout() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const isHomePage = location.pathname === '/';
+  
+  const isHomePage = location.pathname === '/' || location.pathname === '/derslerim';
 
   const auth = useAuthContext();
   const { userId, userName, userRole } = auth;
@@ -245,7 +246,6 @@ export default function AppLayout() {
           </div>
         </main>
       </div>
-      {/* DEĞİŞİKLİK BURADA: BottomNav'a userRole prop'u eklendi */}
       <BottomNav isMuted={isMuted} userRole={userRole} />
     </>
   );

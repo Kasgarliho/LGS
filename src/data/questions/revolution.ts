@@ -1,7 +1,7 @@
 import { Question } from "@/types";
 
 export const revolutionQuestions: Question[] = [
-  // --- KULLANICIDAN GELEN MEVCUT SORULAR ---
+ 
   {
     id: 'og_ink_1', subjectId: 'revolution', topic: 'Milli Mücadele', difficulty: 'medium',
     question: 'Aşağıdakilerden hangisi Sivas Kongresi’nde alınan kararlardan biri değildir?',

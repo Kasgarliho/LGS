@@ -27,17 +27,13 @@ import SchedulePage from "./pages/SchedulePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import WordQuizPage from "./pages/WordQuizPage";
 
-// ==========================================================
-// KESİN ÇÖZÜM BURADA: Otomatik veri yenileme ayarı eklendi
-// ==========================================================
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Sekmeye geri dönüldüğünde otomatik veri çekmeyi kapatır.
+      refetchOnWindowFocus: false,
     },
   },
 });
-// ==========================================================
 
 const StatisticsPage = () => {
   const context = useAppContext();
@@ -168,7 +164,7 @@ const ProtectedRoute = () => {
     if (!session) {
         return <Navigate to="/login" replace />;
     }
-    
+
     if (!profile) {
         return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Profil bilgileri alınıyor...</p></div>;
     }
@@ -176,6 +172,9 @@ const ProtectedRoute = () => {
     return <AppLayout />;
 };
 
+// === DEĞİŞİKLİK BURADA YAPILDI ===
+// "index: true" artık PracticePage'i gösteriyor.
+// Eski ana sayfa (Index) ise "derslerim" yoluna taşındı.
 const router = createBrowserRouter([
     {
         path: "/login",
@@ -185,10 +184,11 @@ const router = createBrowserRouter([
         path: "/",
         element: <ProtectedRoute />,
         children: [
-            { path: 'update-password', element: <div>Şifre güncelleme sayfası</div> }, // Şifre güncelleme için geçici sayfa
-            { index: true, element: <Index /> }, 
+            { path: 'update-password', element: <div>Şifre güncelleme sayfası</div> },
+            { index: true, element: <PracticePage /> }, // YENİ AÇILIŞ SAYFASI
+            { path: "derslerim", element: <Index /> }, // ESKİ ANA SAYFA BURAYA TAŞINDI
             { path: "program", element: <ProgramimSayfasi /> },
-            { path: "practice", element: <PracticePage /> },
+            { path: "practice", element: <PracticePage /> }, // Bu satır kalsa da olur, aynı sayfaya yönlendirir.
             { path: "statistics", element: <StatisticsPage /> },
             { path: "achievements", element: <AchievementsPage /> },
             { path: "market", element: <MarketPage /> },

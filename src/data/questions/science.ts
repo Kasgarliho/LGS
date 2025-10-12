@@ -364,5 +364,5 @@ export const scienceQuestions: Question[] = [
     correctAnswer: 3,
     explanation: 'Kağıdın yanması, yeni maddelerin oluştuğu kimyasal bir değişimdir.'
   },
-  // ... And 80 more questions to reach a total of 100.
+ 
 ];

@@ -24,7 +24,7 @@ export const useAuth = (isMuted: boolean) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-
+  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [regFullName, setRegFullName] = useState("");
@@ -97,15 +97,15 @@ export const useAuth = (isMuted: boolean) => {
       if (signInError) {
         throw new Error("Kullanıcı adı veya şifre hatalı.");
       }
-
+      
       playIntroSound(storage.loadIsMuted());
 
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-
-  // === İSTEDİĞİNİZ AKILLI KONTROL SİSTEMİ BURADA ===
+  
+  // === ÖN KAYIT KONTROLÜNÜ İÇEREN DOĞRU FONKSİYON ===
   const handleNewStudentRegistration = async (): Promise<boolean> => {
     if (!regFullName || !regClassName || !regCoachCode || !regEmail || !regPassword || !regConfirmPassword) {
       toast.error("Tüm alanları doldurmalısınız.");
@@ -121,19 +121,19 @@ export const useAuth = (isMuted: boolean) => {
     }
 
     try {
-      // 1. Öğrencinin girdiği Ad/Soyad ve Sınıf bilgilerini "temizle" (normalize et).
+      // 1. Öğrencinin girdiği Ad/Soyad ve Sınıf bilgilerini "temizle".
       const normalizedFullName = normalizeText(regFullName);
       const finalClassName = regClassName.trim();
-
-      // 2. Veritabanındaki `onkayit_ogrenciler` tablosunda bu temizlenmiş isme ve sınıfa sahip bir kayıt var mı diye kontrol et.
+      
+      // 2. Veritabanındaki `onkayit_ogrenciler` tablosunda bu temizlenmiş isme sahip bir kayıt var mı diye kontrol et.
       const { data: preRegData, error: preRegError } = await supabase
         .from('onkayit_ogrenciler')
         .select('*')
-        .eq('ad_soyad_normalized', normalizedFullName) // Temizlenmiş isimle ara
-        .ilike('sinif', finalClassName) // Sınıfı büyük/küçük harf duyarsız ara
+        .eq('ad_soyad_normalized', normalizedFullName)
+        .ilike('sinif', finalClassName)
         .single();
-
-      // 3. Kayıt bulunamazsa, hata ver ve işlemi durdur.
+        
+      // 3. Kayıt bulunamazsa, hata ver.
       if (preRegError || !preRegData) {
         throw new Error("Ön kayıt bulunamadı. Lütfen Ad Soyad ve Sınıf bilgilerinizi kontrol edin.");
       }
@@ -177,7 +177,7 @@ export const useAuth = (isMuted: boolean) => {
         duration: 10000
       });
       return true;
-
+      
     } catch (error: any) {
       toast.error(error.message);
       return false;
@@ -204,8 +204,9 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
+  // === ÇIKIŞ YAPMA FONKSİYONUNUN DÜZELTİLMİŞ HALİ ===
   const handleLogout = async () => { 
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: 'local' });
   };
 
   const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => { 
@@ -228,7 +229,7 @@ export const useAuth = (isMuted: boolean) => {
     toast.success("Şifreniz başarıyla güncellendi!");
     return true; 
   };
-
+  
   return {
     session, profile, authLoading,
     userId: profile?.id ?? null,

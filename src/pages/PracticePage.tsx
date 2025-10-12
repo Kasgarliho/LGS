@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Question, SolvedStat } from "@/types"; // Düzeltilmiş import
+import { Question, SolvedStat } from "@/types";
 import { questions as allQuestions } from "@/data/questions";
 import { useAppContext } from "./AppLayout";
 import QuestionSolver from "@/components/QuestionSolver";
@@ -40,7 +40,7 @@ export default function PracticePage() {
     setSelectedSubjectId(subjectId);
     setIsSolving(true);
   };
-  
+
   const handleFinishSolving = (solvedStats: SolvedStat[]) => {
     setIsSolving(false);
     if (selectedSubjectId) {
@@ -48,7 +48,7 @@ export default function PracticePage() {
     }
     setSelectedSubjectId(null);
   };
-  
+
   const availableSubjects = subjects.filter(s => 
     (s.id === 'turkish' || s.id === 'math' || s.id === 'science' || s.id === 'religion' || s.id === 'english' || s.id === 'revolution') &&
     !dailySolvedSubjects.includes(s.id)
@@ -78,7 +78,8 @@ export default function PracticePage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <Tabs defaultValue="gunluk-gorev" className="w-full">
+      {/* === DEĞİŞİKLİK BURADA YAPILDI: defaultValue "vocab-world" olarak ayarlandı === */}
+      <Tabs defaultValue="vocab-world" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="gunluk-gorev">Günlük Görev</TabsTrigger>
           <TabsTrigger value="vocab-world">Vocab World</TabsTrigger>
