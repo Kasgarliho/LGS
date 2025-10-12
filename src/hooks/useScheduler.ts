@@ -1,5 +1,3 @@
-// src/hooks/useScheduler.ts
-
 import { useEffect, useMemo, useState } from 'react';
 import { storage, NotificationSettings } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
@@ -9,7 +7,6 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { subjects as allSubjectsData } from '@/data/subjects';
 
 const weekDaysForLookup = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
-const CHALLENGE_NOTIFICATION_ID = 999;
 
 export const useScheduler = (userId: string | null, isInitialized: boolean) => {
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(storage.loadNotificationSettings());
@@ -27,135 +24,113 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
 
   const isEvening = useMemo(() => new Date().getHours() >= 19, []);
 
-  // GÜNCELLENDİ: Hata alsa bile duracak şekilde updateUserCloudData
   const updateUserCloudData = async (dataToUpdate: object) => {
     if (!userId || !isInitialized) return;
     const { error } = await supabase.from('kullanicilar').update(dataToUpdate).eq('id', userId);
-    if (error) console.error("Bulut planlama verisi güncellenirken hata oluştu:", error);
+    if (error) {
+        console.error("Bulut zamanlama verisi güncellenirken hata oluştu:", error);
+        toast.error("Programınız buluta kaydedilemedi.");
+    }
   };
-  
-  useEffect(() => {
-    setNotificationSettings(storage.loadNotificationSettings());
-    setManualSchedule(storage.loadManualSchedule());
 
-    if(userId) {
-       // Cloud'dan customPlan çekme
-       supabase
-        .from('kullanicilar')
-        .select('calisma_programi')
-        .eq('id', userId)
-        .maybeSingle()
-        .then(({ data }) => {
-          if(data && data.calisma_programi) {
-            setCustomPlan(data.calisma_programi);
-            storage.saveCustomStudyPlan(userId, data.calisma_programi); // Lokal yedeği de güncelle
-          } else {
-             // Cloud'da yoksa lokalden çek (bu genelde ilk girişte olur)
-             setCustomPlan(storage.loadCustomStudyPlan(userId));
-          }
-        });
+  useEffect(() => {
+    if (userId) {
+      const fetchSchedulerData = async () => {
+        const { data, error } = await supabase
+          .from('kullanicilar')
+          .select('manuel_program, calisma_programi')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error("Zamanlama verileri çekilirken hata:", error);
+        } else if (data) {
+          setManualSchedule(data.manuel_program || storage.loadManualSchedule());
+          setCustomPlan(data.calisma_programi || {});
+        }
+      };
+      fetchSchedulerData();
     } else {
+        setManualSchedule(null);
         setCustomPlan(null);
     }
   }, [userId]);
 
-  // GÜNCELLEME: customPlan değiştiğinde sadece kaydetme
-  useEffect(() => { 
-    if (isInitialized && userId) { 
-        storage.saveCustomStudyPlan(userId, customPlan); 
-        // Plan değiştiğinde buluta kaydet
-        if (customPlan !== null) {
-            updateUserCloudData({ calisma_programi: customPlan }); 
-        }
-    } 
-  }, [customPlan, isInitialized, userId]);
-
+  useEffect(() => {
+    if (userId && isInitialized && manualSchedule) {
+      storage.saveManualSchedule(manualSchedule);
+      updateUserCloudData({ manuel_program: manualSchedule });
+    }
+  }, [manualSchedule, userId, isInitialized]);
 
   useEffect(() => {
-    const scheduleChallengeNotification = async () => {
-      await LocalNotifications.cancel({ notifications: [{ id: CHALLENGE_NOTIFICATION_ID }] });
+    if (userId && isInitialized && customPlan) {
+      storage.saveCustomStudyPlan(userId, customPlan);
+      updateUserCloudData({ calisma_programi: customPlan });
+    }
+  }, [customPlan, userId, isInitialized]);
+  
+  useEffect(() => {
+    storage.saveNotificationSettings(notificationSettings);
+  }, [notificationSettings]);
 
-      if (notificationSettings.challengeReminder) {
-        const scheduleDate = new Date();
-        scheduleDate.setDate(scheduleDate.getDate() + 3);
-        scheduleDate.setHours(18, 0, 0, 0);
 
-        await LocalNotifications.schedule({
-          notifications: [{
-            id: CHALLENGE_NOTIFICATION_ID,
-            title: "LGS Asistanı Seni Bekliyor! 💪",
-            body: "Var mısın bir meydan okumaya? Yeni kelimeler ve sorular seni bekliyor!",
-            schedule: { at: scheduleDate },
-          }]
-        });
-      }
+  const handleUpdateManualSchedule = (newSchedule: ManualSchedule) => {
+    setManualSchedule(newSchedule);
+    toast.success("Ders programı güncellendi ve kaydedildi.");
+  };
+
+  const getSubjectName = (subjectId: string) => {
+    const subject = allSubjectsData.find(s => s.id === subjectId);
+    return subject ? subject.name : 'Bilinmeyen Ders';
+  };
+
+  const handleAddPlanEntry = async (newEntryData: Omit<StudyPlanEntry, 'id' | 'notificationId'>) => {
+    const fullEntry: StudyPlanEntry = {
+      ...newEntryData,
+      id: `plan-${Date.now()}`
     };
 
-    if (isInitialized && userId) {
-      scheduleChallengeNotification();
-    }
-  }, [isInitialized, userId, notificationSettings.challengeReminder]);
-
-
-  useEffect(() => { if (isInitialized) storage.saveNotificationSettings(notificationSettings); }, [notificationSettings, isInitialized]);
-  useEffect(() => { if (isInitialized && manualSchedule) storage.saveManualSchedule(manualSchedule); }, [manualSchedule, isInitialized]);
-
-  const handleUpdateNotificationSettings = (settings: NotificationSettings) => setNotificationSettings(settings);
-  
-  const handleUpdateManualSchedule = (schedule: ManualSchedule) => setManualSchedule(schedule);
-  
-  const getSubjectName = (subjectId: string) => allSubjectsData.find(s => s.id === subjectId)?.name || subjectId;
-
-  const handleAddPlanEntry = async (newPlanData: Omit<StudyPlanEntry, 'id' | 'notificationId'>) => {
-    const notificationId = Date.now();
-    const newEntry: StudyPlanEntry = { ...newPlanData, id: notificationId.toString(), notificationId };
-    
     if (notificationSettings.studyPlanReminder.enabled) {
       try {
-        const weekDaysMap: { [key: string]: number } = { "Pazartesi": 1, "Salı": 2, "Çarşamba": 3, "Perşembe": 4, "Cuma": 5, "Cumartesi": 6, "Pazar": 0 };
-        const today = new Date();
-        const currentDayIndex = today.getDay();
-        const targetDayIndex = weekDaysMap[newEntry.day];
+        const [day, time] = [fullEntry.day, fullEntry.timeRange.split(' - ')[0]];
+        const dayIndex = weekDaysForLookup.indexOf(day);
+        const [hour, minute] = time.split(':').map(Number);
         
-        let dayDifference = targetDayIndex - currentDayIndex;
-        if (dayDifference < 0) { dayDifference += 7; }
-        
-        const [hour, minute] = newEntry.timeRange.split(' - ')[0].split(':').map(Number);
-        const scheduleDate = new Date();
-        scheduleDate.setDate(today.getDate() + dayDifference);
-        scheduleDate.setHours(hour, minute, 0, 0);
+        const now = new Date();
+        const notificationDate = new Date();
+        const daysUntilTarget = (dayIndex - now.getDay() + 7) % 7;
+        notificationDate.setDate(now.getDate() + daysUntilTarget);
+        notificationDate.setHours(hour, minute, 0, 0);
 
-        if (dayDifference === 0 && scheduleDate.getTime() < today.getTime()) {
-            scheduleDate.setDate(scheduleDate.getDate() + 7);
-        }
-
-        const reminderTime = notificationSettings.studyPlanReminder.minutesBefore * 60000;
-        const reminderDate = new Date(scheduleDate.getTime() - reminderTime);
-
-        if (reminderDate.getTime() > new Date().getTime()) {
+        if (notificationDate.getTime() > now.getTime()) {
+          const notificationId = Math.floor(Math.random() * 10000);
+          fullEntry.notificationId = notificationId;
+          
           await LocalNotifications.schedule({
             notifications: [{
+              title: "Çalışma Zamanı!",
+              body: `${getSubjectName(fullEntry.subjectId)} için belirlediğin ${fullEntry.studyType} zamanı geldi.`,
               id: notificationId,
-              title: "🔔 Çalışma Zamanı!",
-              body: `${getSubjectName(newEntry.subjectId)} etkinliğin ${notificationSettings.studyPlanReminder.minutesBefore} dakika sonra başlıyor.`,
-              schedule: { at: reminderDate },
+              schedule: { at: notificationDate },
             }]
           });
-          toast.success("Hatırlatıcı başarıyla kuruldu!");
-        } else {
-          toast.warning("Hatırlatıcı geçmiş bir zaman için kurulamaz.");
         }
       } catch (e) { 
         console.error("Bildirim hatası:", e); 
         toast.error("Hatırlatıcı kurulamadı."); 
       }
     }
+
     setCustomPlan(prevPlan => {
       const updatedPlan = { ...prevPlan };
-      if (!updatedPlan[newEntry.day]) { updatedPlan[newEntry.day] = []; }
-      updatedPlan[newEntry.day].push(newEntry);
+      if (!updatedPlan[fullEntry.day]) { 
+          updatedPlan[fullEntry.day] = []; 
+      }
+      updatedPlan[fullEntry.day].push(fullEntry);
       return updatedPlan;
     });
+    toast.success("Çalışma planına yeni etkinlik eklendi.");
   };
   
   const handleRemovePlanEntry = async (planId: string) => {
@@ -171,10 +146,16 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
       }
       return updatedPlan;
     });
+
     if (notificationIdToCancel) {
       await LocalNotifications.cancel({ notifications: [{ id: notificationIdToCancel }] });
     }
     toast.info("Programdan silindi ve hatırlatıcı iptal edildi.");
+  };
+
+  const handleUpdateNotificationSettings = (settings: NotificationSettings) => {
+      setNotificationSettings(settings);
+      toast.success("Bildirim ayarları kaydedildi.");
   };
 
   return {
@@ -186,6 +167,6 @@ export const useScheduler = (userId: string | null, isInitialized: boolean) => {
     handleUpdateNotificationSettings,
     handleUpdateManualSchedule,
     handleAddPlanEntry,
-    handleRemovePlanEntry
+    handleRemovePlanEntry,
   };
 };

@@ -4,13 +4,11 @@ import { useState } from "react";
 import { Subject } from "@/types";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// Düzeltme: DialogHeader'da DialogDescription'ı kullanmak için içeri alıyoruz
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"; 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, BookOpen } from "lucide-react";
-import { lgsTopics } from "@/data/lgsTopics";
 import { toast } from 'sonner';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Browser } from '@capacitor/browser';
@@ -35,12 +33,8 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
   const [selectedTopic, setSelectedTopic] = useState<string>("");
   const [correctCount, setCorrectCount] = useState<string>("");
   const [incorrectCount, setIncorrectCount] = useState<string>("");
-  
-  const totalCompleted = subject.correct + subject.incorrect;
 
-  const getTopicsForSubject = (subjectId: string) => {
-    return lgsTopics[subjectId as keyof typeof lgsTopics] || [];
-  };
+  const totalCompleted = subject.correct + subject.incorrect;
 
   const handleSubmit = () => {
     const correct = parseInt(correctCount) || 0;
@@ -53,15 +47,13 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
       setIncorrectCount("");
     }
   };
-  
-  // GÜNCELLENDİ: Platforma göre farklı davranan fonksiyon
+
   const handleOpenMebiApp = async () => {
     const appUrl = 'mebi://';
     const androidStoreUrl = 'https://play.google.com/store/apps/details?id=tr.gov.eba.mebi';
     const iosStoreUrl = 'https://apps.apple.com/tr/app/id1438258386';
     const platform = Capacitor.getPlatform();
 
-    // Eğer platform web ise, direkt mağaza linkini yeni sekmede aç
     if (platform === 'web') {
       const storeUrl = /iPad|iPhone|iPod/.test(navigator.userAgent) ? iosStoreUrl : androidStoreUrl;
       toast.info("MEB uygulaması için mağaza sayfası açılıyor...");
@@ -69,7 +61,6 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
       return;
     }
 
-    // Eğer platform mobil ise (Android/iOS), mevcut mantığı kullan
     const storeUrl = platform === 'ios' ? iosStoreUrl : androidStoreUrl;
     try {
       const canOpen = await AppLauncher.canOpenUrl({ url: appUrl });
@@ -105,7 +96,7 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         <div className={`h-6 w-full rounded-full flex items-center justify-center ${getColorVariant(subject.color)}`}>
           <span className="text-white font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
@@ -124,7 +115,6 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Soru Ekle - {subject.name}</DialogTitle>
-                {/* KRİTİK DÜZELTME: DialogDescription eklendi */}
                 <DialogDescription>
                     Çözdüğün soru sayılarını gir ve hangi konuyu çalıştığını belirt.
                 </DialogDescription>
@@ -135,7 +125,7 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
                   <Select value={selectedTopic} onValueChange={setSelectedTopic}>
                     <SelectTrigger><SelectValue placeholder="LGS konusu seçin..." /></SelectTrigger>
                     <SelectContent>
-                      {getTopicsForSubject(subject.id).map((topic) => (
+                      {subject.topics.map((topic) => (
                         <SelectItem key={topic} value={topic}>{topic}</SelectItem>
                       ))}
                     </SelectContent>

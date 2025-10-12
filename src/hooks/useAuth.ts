@@ -3,22 +3,28 @@ import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 import { playIntroSound, playSuccessSound, playFailSound } from '@/utils/sounds';
+import { storage } from '@/utils/storage';
 
-// Helper functions (bunlarda değişiklik yok)
-const sanitizeCoachCode = (text: string) => {
+// Bu fonksiyon, tüm isimleri standart bir formata çevirir.
+const normalizeText = (text: string) => {
   if (!text) return "";
-  return text.trim().toUpperCase().replace(/ /g, '').replace(/İ/g, 'I').replace(/Ş/g, 'S').replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ö/g, 'O').replace(/Ç/g, 'C');
-};
-const generateUsername = (fullName: string) => {
-  if (!fullName) return "";
-  return fullName.trim().toLowerCase().replace(/ /g, '').replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/ /g, '')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ğ/g, 'g')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ç/g, 'c');
 };
 
 export const useAuth = (isMuted: boolean) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [regFullName, setRegFullName] = useState("");
@@ -30,7 +36,6 @@ export const useAuth = (isMuted: boolean) => {
 
   useEffect(() => {
     setAuthLoading(true);
-
     const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -52,7 +57,6 @@ export const useAuth = (isMuted: boolean) => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
-        // Oturum değiştiğinde profili yeniden çek veya temizle
         if (session?.user) {
           supabase.from('kullanicilar').select('*').eq('id', session.user.id).single()
             .then(({ data: userProfile }) => {
@@ -93,13 +97,15 @@ export const useAuth = (isMuted: boolean) => {
       if (signInError) {
         throw new Error("Kullanıcı adı veya şifre hatalı.");
       }
-      playIntroSound(isMuted);
+
+      playIntroSound(storage.loadIsMuted());
 
     } catch (error: any) {
       toast.error(error.message);
     }
   };
-  
+
+  // === İSTEDİĞİNİZ AKILLI KONTROL SİSTEMİ BURADA ===
   const handleNewStudentRegistration = async (): Promise<boolean> => {
     if (!regFullName || !regClassName || !regCoachCode || !regEmail || !regPassword || !regConfirmPassword) {
       toast.error("Tüm alanları doldurmalısınız.");
@@ -115,49 +121,51 @@ export const useAuth = (isMuted: boolean) => {
     }
 
     try {
-      const finalFullName = regFullName.trim();
+      // 1. Öğrencinin girdiği Ad/Soyad ve Sınıf bilgilerini "temizle" (normalize et).
+      const normalizedFullName = normalizeText(regFullName);
       const finalClassName = regClassName.trim();
-      const finalCoachCode = sanitizeCoachCode(regCoachCode);
 
+      // 2. Veritabanındaki `onkayit_ogrenciler` tablosunda bu temizlenmiş isme ve sınıfa sahip bir kayıt var mı diye kontrol et.
       const { data: preRegData, error: preRegError } = await supabase
         .from('onkayit_ogrenciler')
         .select('*')
-        .ilike('ad_soyad', finalFullName)
-        .ilike('sinif', finalClassName)
-        .ilike('koc_kodu', finalCoachCode)
+        .eq('ad_soyad_normalized', normalizedFullName) // Temizlenmiş isimle ara
+        .ilike('sinif', finalClassName) // Sınıfı büyük/küçük harf duyarsız ara
         .single();
-        
+
+      // 3. Kayıt bulunamazsa, hata ver ve işlemi durdur.
       if (preRegError || !preRegData) {
-        throw new Error("Ön kayıt bulunamadı. Lütfen Ad Soyad, Sınıf ve Koç Kodu bilgilerinizi kontrol edin.");
+        throw new Error("Ön kayıt bulunamadı. Lütfen Ad Soyad ve Sınıf bilgilerinizi kontrol edin.");
       }
       if (preRegData.kayit_tamamlandi) {
         throw new Error("Bu öğrenci için zaten bir hesap oluşturulmuş.");
       }
 
-      const generatedUsername = generateUsername(finalFullName);
-      
+      // 4. Otomatik kullanıcı adını oluştur ve daha önce alınıp alınmadığını kontrol et.
+      const generatedUsername = normalizeText(regFullName);
+      const { data: usernameCheck } = await supabase.from('kullanicilar').select('id').eq('kullanici_adi', generatedUsername).single();
+      if (usernameCheck) {
+        throw new Error(`'${generatedUsername}' kullanıcı adı zaten alınmış. Lütfen yöneticinizle iletişime geçin.`);
+      }
+
+      // 5. Her şey yolundaysa, öğrencinin hesabını oluştur.
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
-        email: regEmail,
+        email: regEmail.trim().toLowerCase(),
         password: regPassword,
         options: {
           data: {
-            ad_soyad: finalFullName,
-            koc_kodu: finalCoachCode 
+            ad_soyad: preRegData.ad_soyad, // Veritabanındaki orijinal, düzgün ismi kullan
+            koc_kodu: preRegData.koc_kodu,
+            kullanici_adi: generatedUsername,
+            rol: 'ogrenci',
+            sinif: preRegData.sinif
           }
         }
       });
       if (signUpError) throw signUpError;
       if (!user) throw new Error("Kullanıcı oluşturulamadı, lütfen tekrar deneyin.");
 
-      const { error: updateError } = await supabase
-        .from('kullanicilar')
-        .update({
-          rol: 'ogrenci',
-          kullanici_adi: generatedUsername
-        })
-        .eq('id', user.id);
-      if (updateError) throw updateError;
-      
+      // 6. Ön kayıt tablosunu güncelle.
       const { error: preRegUpdateError } = await supabase
         .from('onkayit_ogrenciler')
         .update({ kayit_tamamlandi: true })
@@ -169,7 +177,7 @@ export const useAuth = (isMuted: boolean) => {
         duration: 10000
       });
       return true;
-      
+
     } catch (error: any) {
       toast.error(error.message);
       return false;
@@ -183,7 +191,7 @@ export const useAuth = (isMuted: boolean) => {
     }
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'http://localhost:8080/update-password',
+        redirectTo: `${window.location.origin}/update-password`,
       });
       if (error) throw error;
       toast.success("Şifre sıfırlama e-postası gönderildi!", {
@@ -201,18 +209,31 @@ export const useAuth = (isMuted: boolean) => {
   };
 
   const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => { 
-    if (!profile?.email) { toast.error("Kullanıcı oturumu bulunamadı."); return false; }
+    if (!profile?.email) {
+      toast.error("Kullanıcı oturumu bulunamadı.");
+      return false;
+    }
     const { error: signInError } = await supabase.auth.signInWithPassword({ email: profile.email, password: currentPassword });
-    if (signInError) { playFailSound(isMuted); toast.error("Mevcut şifreniz yanlış!"); return false; }
+    if (signInError) {
+      playFailSound(isMuted);
+      toast.error("Mevcut şifreniz yanlış!");
+      return false;
+    }
     const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
-    if (updateError) { toast.error("Şifre güncellenirken bir hata oluştu."); return false; }
-    playSuccessSound(isMuted); toast.success("Şifreniz başarıyla güncellendi!");
+    if (updateError) {
+      toast.error("Şifre güncellenirken bir hata oluştu.");
+      return false;
+    }
+    playSuccessSound(isMuted);
+    toast.success("Şifreniz başarıyla güncellendi!");
     return true; 
   };
-  
+
   return {
     session, profile, authLoading,
-    userId: profile?.id ?? null, userName: profile?.ad_soyad ?? null, userRole: profile?.rol ?? null,
+    userId: profile?.id ?? null,
+    userName: profile?.ad_soyad ?? null,
+    userRole: profile?.rol ?? null,
     username, setUsername,
     password, setPassword,
     handleLogin,
