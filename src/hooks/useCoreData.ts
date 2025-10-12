@@ -31,26 +31,24 @@ export const useCoreData = (
   useEffect(() => {
     if (!userId) {
       setIsCloudDataLoaded(true);
+      // Kullanıcı yoksa veya çıkış yapmışsa state'i sıfırla
+      setTotalPoints(0);
+      setStreak(0);
+      setStreakFreezes(0);
+      setChallengeWins(0);
+      setUserAvatars({ current: 'default', unlocked: ['default'] });
+      setAchievements(initialAchievementsData);
       return; 
     }
 
     const lowerCaseRole = userRole?.toLowerCase();
-    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') { 
-      const allAvatarIds = allAvatars.map(avatar => avatar.id);
-      setUserAvatars(prev => ({ ...prev, unlocked: allAvatarIds }));
-      setTotalPoints(9999);
-      setStreak(99);
-      setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
-      setChallengeWins(999);
-      setIsCloudDataLoaded(true);
-      return; 
-    }
+    const isPrivilegedRole = lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca';
     
     const fetchCoreData = async () => {
       try {
         setIsCloudDataLoaded(false);
         const [cloudDataRes, winsDataRes] = await Promise.all([
-          supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar').eq('id', userId).maybeSingle(),
+          supabase.from('kullanicilar').select('puan, seri, seri_dondurma, avatar, kazanilan_basarimlar, is_test_account').eq('id', userId).maybeSingle(),
           supabase.rpc('get_challenge_win_count', { p_user_id: userId })
         ]);
 
@@ -67,18 +65,28 @@ export const useCoreData = (
           const loadedAchievements = storage.loadAchievements(userId);
           setAchievements(loadedAchievements.length > 0 ? loadedAchievements : initialAchievementsData);
         } else {
-          setTotalPoints(cloudData.puan ?? 0);
-          setStreak(cloudData.seri ?? 0);
-          setStreakFreezes(cloudData.seri_dondurma ?? 0);
-          try {
-            const parsedAvatars = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar;
-            setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : { current: 'default', unlocked: ['default'] });
-          } catch (e) {
-            setUserAvatars({ current: 'default', unlocked: ['default'] });
-          }
-          const unlockedAchievementIds = new Set(cloudData.kazanilan_basarimlar || []);
-          const syncedAchievements = initialAchievementsData.map(ach => ({ ...ach, unlocked: unlockedAchievementIds.has(ach.id) }));
-          setAchievements(syncedAchievements);
+            const isTestAccount = cloudData.is_test_account === true;
+            if (isPrivilegedRole || isTestAccount) {
+                const allAvatarIds = allAvatars.map(avatar => avatar.id);
+                setUserAvatars(prev => ({ ...prev, unlocked: allAvatarIds }));
+                setTotalPoints(9999);
+                setStreak(99);
+                setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
+                setChallengeWins(999); // Bu değeri de güncelleyelim
+            } else {
+                setTotalPoints(cloudData.puan ?? 0);
+                setStreak(cloudData.seri ?? 0);
+                setStreakFreezes(cloudData.seri_dondurma ?? 0);
+                try {
+                    const parsedAvatars = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar;
+                    setUserAvatars(parsedAvatars && parsedAvatars.unlocked ? parsedAvatars : { current: 'default', unlocked: ['default'] });
+                } catch (e) {
+                    setUserAvatars({ current: 'default', unlocked: ['default'] });
+                }
+                const unlockedAchievementIds = new Set(cloudData.kazanilan_basarimlar || []);
+                const syncedAchievements = initialAchievementsData.map(ach => ({ ...ach, unlocked: unlockedAchievementIds.has(ach.id) }));
+                setAchievements(syncedAchievements);
+            }
         }
       } catch (e) {
           console.error("fetchCoreData içinde beklenmedik bir hata oluştu:", e);
@@ -91,40 +99,41 @@ export const useCoreData = (
   }, [userId, userRole, userName]);
 
   useEffect(() => { 
-    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') { 
       storage.savePoints(userId, totalPoints); 
       updateUserCloudData({ puan: totalPoints }); 
     } 
   }, [totalPoints, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') { 
       storage.saveStreak(userId, streak); 
       updateUserCloudData({ seri: streak }); 
     } 
   }, [streak, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+    if (isInitialized && userId && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') { 
       storage.saveStreakFreezes(userId, streakFreezes); 
       updateUserCloudData({ seri_dondurma: streakFreezes }); 
     } 
   }, [streakFreezes, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => { 
-    if (isInitialized && userId && userAvatars && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') { 
+    if (isInitialized && userId && userAvatars && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') { 
       storage.saveUserAvatars(userId, userAvatars); 
       updateUserCloudData({ avatar: userAvatars }); 
     } 
   }, [userAvatars, isInitialized, userId, userRole, isCloudDataLoaded]);
 
   useEffect(() => {
-    if (isInitialized && userId && achievements.length > 0 && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç') {
+    if (isInitialized && userId && achievements.length > 0 && isCloudDataLoaded && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') {
       storage.saveAchievements(userId, achievements);
       const unlockedIds = achievements.filter(a => a.unlocked).map(a => a.id);
       updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
     }
   }, [achievements, isInitialized, isCloudDataLoaded, userId, userRole]);
+
 
   const handleBuyStreakFreeze = () => {
     const lowerCaseRole = userRole?.toLowerCase();

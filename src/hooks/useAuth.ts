@@ -4,34 +4,14 @@ import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 import { playIntroSound, playSuccessSound, playFailSound } from '@/utils/sounds';
 
-// Helper function to sanitize coach codes for matching
+// Helper functions (bunlarda değişiklik yok)
 const sanitizeCoachCode = (text: string) => {
   if (!text) return "";
-  return text
-    .trim()
-    .toUpperCase()
-    .replace(/ /g, '')
-    .replace(/İ/g, 'I')
-    .replace(/Ş/g, 'S')
-    .replace(/Ğ/g, 'G')
-    .replace(/Ü/g, 'U')
-    .replace(/Ö/g, 'O')
-    .replace(/Ç/g, 'C');
+  return text.trim().toUpperCase().replace(/ /g, '').replace(/İ/g, 'I').replace(/Ş/g, 'S').replace(/Ğ/g, 'G').replace(/Ü/g, 'U').replace(/Ö/g, 'O').replace(/Ç/g, 'C');
 };
-
-// Helper function to generate a username from a full name
 const generateUsername = (fullName: string) => {
   if (!fullName) return "";
-  return fullName
-    .trim()
-    .toLowerCase()
-    .replace(/ /g, '')
-    .replace(/ı/g, 'i')
-    .replace(/ş/g, 's')
-    .replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c');
+  return fullName.trim().toLowerCase().replace(/ /g, '').replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
 };
 
 export const useAuth = (isMuted: boolean) => {
@@ -39,11 +19,8 @@ export const useAuth = (isMuted: boolean) => {
   const [profile, setProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   
-  // Login form state
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-
-  // New Registration form state
   const [regFullName, setRegFullName] = useState("");
   const [regClassName, setRegClassName] = useState("");
   const [regCoachCode, setRegCoachCode] = useState("");
@@ -52,37 +29,44 @@ export const useAuth = (isMuted: boolean) => {
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
 
   useEffect(() => {
-    const initializeAndListen = async () => {
+    setAuthLoading(true);
+
+    const getInitialSession = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        setSession(initialSession);
-        if (initialSession?.user) {
-          const { data: userProfile } = await supabase.from('kullanicilar').select('*').eq('id', initialSession.user.id).single();
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        if (session?.user) {
+          const { data: userProfile } = await supabase.from('kullanicilar').select('*').eq('id', session.user.id).single();
           setProfile(userProfile || null);
         }
       } catch (error) {
-        console.error("Oturum başlatılırken hata:", error);
+        console.error("Oturum alınırken hata oluştu:", error);
+        setProfile(null);
       } finally {
         setAuthLoading(false);
       }
-
-      const { data: authListener } = supabase.auth.onAuthStateChange(
-        async (_event, newSession) => {
-          setAuthLoading(true);
-          setSession(newSession);
-          setProfile(null);
-          if (newSession?.user) {
-            const { data: userProfile } = await supabase.from('kullanicilar').select('*').eq('id', newSession.user.id).single();
-            setProfile(userProfile || null);
-          }
-          setAuthLoading(false);
-        }
-      );
-      return () => { authListener.subscription.unsubscribe(); };
     };
 
-    const subscriptionPromise = initializeAndListen();
-    return () => { subscriptionPromise.then(cleanup => cleanup && cleanup()); };
+    getInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        // Oturum değiştiğinde profili yeniden çek veya temizle
+        if (session?.user) {
+          supabase.from('kullanicilar').select('*').eq('id', session.user.id).single()
+            .then(({ data: userProfile }) => {
+              setProfile(userProfile || null);
+            });
+        } else {
+          setProfile(null);
+        }
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async () => {
