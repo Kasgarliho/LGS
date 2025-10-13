@@ -38,11 +38,23 @@ export default function AppLayout() {
 
   const location = useLocation();
   const navigate = useNavigate();
-  
+
   const isHomePage = location.pathname === '/' || location.pathname === '/derslerim';
 
   const auth = useAuthContext();
   const { userId, userName, userRole } = auth;
+
+  // === YÖNLENDİRME DÜZELTMESİ BURADA ===
+  useEffect(() => {
+    const lowerCaseRole = userRole?.toLowerCase();
+    if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
+        // Eğer bir koç, öğrenci sayfalarından birine (ana sayfa, derslerim vb.) düşerse, onu doğrudan koç paneline yönlendir.
+        if (location.pathname === '/' || location.pathname === '/derslerim' || location.pathname === '/practice') {
+             navigate('/coach', { replace: true });
+        }
+    }
+  }, [userRole, navigate, location.pathname]);
+  // ===================================
 
   const coreData = useCoreData(userId, userName, userRole, isInitialized, isMuted);
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
@@ -83,7 +95,7 @@ export default function AppLayout() {
       }
     };
   }, [userId]);
-  
+
   useEffect(() => {
     if (userId) {
       setTheme(storage.loadTheme(userId));
@@ -117,7 +129,7 @@ export default function AppLayout() {
     if (userId && userRole !== 'koç' && userRole !== 'admin' && studyData.lastActiveDate && coreData.setStreak) {
       const { lastActiveDate, setLastActiveDate } = studyData;
       const { streak, streakFreezes, setStreak, setStreakFreezes } = coreData;
-      
+
       const today = new Date();
       const todayStr = today.toLocaleDateString();
       if (lastActiveDate !== todayStr) {
@@ -171,7 +183,7 @@ export default function AppLayout() {
   }, [coreData.isCloudDataLoaded, userId, studyData.subjects, userRole, coreData]);
 
   useEffect(() => { storage.saveIsMuted(isMuted); }, [isMuted]);
-  
+
   useEffect(() => {
     if (theme) {
       document.documentElement.classList.remove('light', 'dark');
@@ -198,11 +210,11 @@ export default function AppLayout() {
       coreData.checkAchievements(studyData.subjects, { type: 'english_unit' });
     }
   };
-  
+
   const dismissChallenge = (challengeId: string) => {
     setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
   };
-  
+
   const totalQuestions = useMemo(() => {
     return studyData.subjects?.reduce((sum, s) => sum + s.correct + s.incorrect, 0) || 0;
   }, [studyData.subjects]);
@@ -217,7 +229,7 @@ export default function AppLayout() {
     isMuted, toggleMute,
     pendingChallenges, dismissChallenge,
   };
-  
+
   if (auth.authLoading || !coreData.isCloudDataLoaded) {
     return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Uygulama Yükleniyor...</p></div>;
   }
