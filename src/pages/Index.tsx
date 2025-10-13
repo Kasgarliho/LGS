@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/pages/AppLayout';
 import SubjectCard from '@/components/SubjectCard';
 import DailyQuote from '@/components/ui/DailyQuote';
@@ -8,22 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Briefcase } from 'lucide-react';
 
 const Index = () => {
-  const { subjects, handleAddQuestions, tomorrowSubjects, isEvening, userRole } = useAppContext();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (userRole) {
-      const lowerCaseRole = userRole.toLowerCase();
-      if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
-        navigate('/coach', { replace: true });
-      }
-    }
-  }, [userRole, navigate]);
-  
-  const lowerCaseRole = userRole?.toLowerCase();
-  if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
-    return <div className="text-center p-8">Koç Paneline Yönlendiriliyor...</div>;
-  }
+  const { subjects, handleAddQuestions, tomorrowSubjects, isEvening } = useAppContext();
 
   return (
     <div className="space-y-6">
