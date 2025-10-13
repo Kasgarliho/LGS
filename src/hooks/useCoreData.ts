@@ -58,32 +58,43 @@ export const useCoreData = (
             const lowerCaseRole = userRole?.toLowerCase();
             const isPrivilegedRole = lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca';
 
-            // === SİLİNEN ÖNEMLİ BLOK GERİ GETİRİLDİ ===
+            // === KOÇ/TEST HESABI İÇİN AVATAR KAYDETME DÜZELTMESİ ===
             if (isPrivilegedRole || isTestAccount) {
+                // 1. Önce veritabanından kayıtlı avatar bilgisini güvenle alalım.
+                let savedAvatarCurrent = 'default';
+                if (cloudData.avatar) {
+                    try {
+                        const parsed = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar;
+                        if (parsed && parsed.current) {
+                            savedAvatarCurrent = parsed.current;
+                        }
+                    } catch (e) { /* Hata olursa varsayılanı kullan */ }
+                }
+
+                // 2. Tüm avatarların kilidini aç ve kayıtlı avatarı ata.
                 const allAvatarIds = allAvatars.map(avatar => avatar.id);
-                setUserAvatars(prev => ({ ...prev, unlocked: allAvatarIds }));
+                const finalPrivilegedAvatars: UserAvatars = {
+                    current: savedAvatarCurrent,
+                    unlocked: allAvatarIds
+                };
+                setUserAvatars(finalPrivilegedAvatars);
+                storage.saveUserAvatars(userId, finalPrivilegedAvatars);
+
+                // 3. Diğer özel ayrıcalıkları ata.
                 setTotalPoints(9999);
                 setStreak(99);
                 setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
                 setChallengeWins(999);
             } else {
-                // Normal öğrenciler için sağlamlaştırılmış kod
+                // Normal öğrenciler için zaten çalışan sağlamlaştırılmış kod
                 setTotalPoints(cloudData.puan ?? 0);
                 setStreak(cloudData.seri ?? 0);
                 setStreakFreezes(cloudData.seri_dondurma ?? 0);
 
                 const defaultAvatarState: UserAvatars = { current: 'default', unlocked: ['default'] };
                 let cloudAvatars: UserAvatars | null = null;
-                
                 if (cloudData.avatar) {
-                    try {
-                        cloudAvatars = typeof cloudData.avatar === 'string' 
-                            ? JSON.parse(cloudData.avatar) 
-                            : cloudData.avatar;
-                    } catch (e) { 
-                        console.error("Avatar verisi bozuk, varsayılana dönülüyor:", e);
-                        cloudAvatars = null;
-                    }
+                    try { cloudAvatars = typeof cloudData.avatar === 'string' ? JSON.parse(cloudData.avatar) : cloudData.avatar; } catch (e) { cloudAvatars = null; }
                 }
                 
                 const finalAvatars: UserAvatars = {
@@ -98,7 +109,6 @@ export const useCoreData = (
                 setAchievements(syncedAchievements);
             }
         } else {
-            // Hata varsa veya veri gelmediyse, cihazdaki veriyi kullan.
             setTotalPoints(storage.loadPoints(userId));
             setStreak(storage.loadStreak(userId));
             setStreakFreezes(storage.loadStreakFreezes(userId));
@@ -186,7 +196,6 @@ export const useCoreData = (
       setTotalPoints(prev => prev - price);
       setStreakFreezes(prev => prev + 1);
       playPurchaseSound(isMuted);
-      toast.success("Seri Dondurma satın alındı! ❄️");
     } else {
       toast.error("Yetersiz puan!");
     }

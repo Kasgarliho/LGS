@@ -16,7 +16,7 @@ export default function WordQuizPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { dismissChallenge } = useAppContext();
-  
+
   const challengeId = location.state?.challengeId;
 
   const [questions, setQuestions] = useState<any[]>([]);
@@ -29,7 +29,6 @@ export default function WordQuizPage() {
   const [showChallengeDialog, setShowChallengeDialog] = useState(false);
   const [finalTime, setFinalTime] = useState(0);
 
-  // YENİ: Meydan okuma sonuçlarını tutmak için state
   const [challengeResult, setChallengeResult] = useState<Challenge | null>(null);
 
   useEffect(() => {
@@ -74,21 +73,19 @@ export default function WordQuizPage() {
         const endTime = Date.now();
         const timeTaken = Math.round((endTime - startTime) / 1000);
         setFinalTime(timeTaken);
-        
-        const finalCorrectCount = correctCount + (isCorrectNow ? 1 : 0) - (isCorrectNow && selectedAnswer !== null ? 0 : 1);
-
 
         if (challengeId) {
+          const finalCorrectCount = isCorrectNow ? correctCount + 1 : correctCount;
           const { data, error } = await supabase.from('challenges').update({
             opponent_score: finalCorrectCount,
             opponent_time_seconds: timeTaken,
             status: 'completed',
             completed_at: new Date().toISOString()
           }).eq('id', challengeId).select(`*, challenger:challenger_id(ad_soyad), opponent:opponent_id(ad_soyad)`).single();
-          
+
           if (error) {
             toast.error("Meydan okuma sonucu kaydedilemedi.");
-          } else {
+          } else if (data) {
             toast.success("Meydan okuma tamamlandı! Sonuçlar gösteriliyor.");
             setChallengeResult({
                 ...data,
@@ -102,10 +99,8 @@ export default function WordQuizPage() {
       }
     }, 400);
   };
-  
-  // GÜNCELLENDİ: Sonuç ekranı artık 3 farklı durum gösteriyor
+
   if (isFinished) {
-    // Durum 1: Meydan okuma tamamlandı ve sonuçlar hazır
     if (challengeResult) {
         const myScore = challengeResult.opponent_score ?? 0;
         const theirScore = challengeResult.challenger_score;
@@ -143,7 +138,6 @@ export default function WordQuizPage() {
         )
     }
 
-    // Durum 2: Normal test tamamlandı
     const score = correctCount;
     return (
         <>
@@ -170,7 +164,6 @@ export default function WordQuizPage() {
     );
   }
 
-  // Durum 3: Test devam ediyor
   if (questions.length === 0) return <div>Test yükleniyor...</div>;
   const currentQuestion = questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
@@ -179,7 +172,10 @@ export default function WordQuizPage() {
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
             <Progress value={progress} className="h-2 mb-4" />
-            <CardTitle className="text-center text-4xl font-bold tracking-wider">{currentQuestion.word}</CardTitle>
+            {/* === DEĞİŞİKLİK BURADA === */}
+            <CardTitle className="text-center text-4xl font-bold tracking-wider notranslate" translate="no">
+              {currentQuestion.word}
+            </CardTitle>
             <CardDescription className="text-center">Doğru anlamı seç.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 gap-4 pt-4">
