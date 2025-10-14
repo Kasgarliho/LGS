@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, BookOpen, Calendar, BarChart3, Trophy } from "lucide-react";
+import { Home, BookOpen, Calendar, BarChart3, Trophy, KeyRound } from "lucide-react";
 import { playConfirmSound } from "@/utils/sounds";
 
 interface BottomNavProps {
@@ -7,8 +7,8 @@ interface BottomNavProps {
   userRole: string | null;
 }
 
-// === MENÜ DÜZENLEMESİ BURADA YAPILDI ===
-const navItems = [
+// Her rol için ayrı menü tanımlamaları
+const studentNavItems = [
   { id: 'home', path: '/', icon: Home, label: 'Ana Sayfa' },
   { id: 'lessons', path: '/derslerim', icon: BookOpen, label: 'Derslerim' },
   { id: 'leaderboard', path: '/leaderboard', icon: Trophy, label: 'Liderlik' },
@@ -16,20 +16,32 @@ const navItems = [
   { id: 'statistics', path: '/statistics', icon: BarChart3, label: 'İstatistik' },
 ];
 
+const coachNavItems = [
+  { id: 'coach_reports', path: '/coach', icon: BarChart3, label: 'Raporlar' },
+  { id: 'leaderboard', path: '/leaderboard', icon: Trophy, label: 'Liderlik' },
+];
+
+const adminNavItems = [
+  { id: 'coach_reports', path: '/coach', icon: BarChart3, label: 'Raporlar' },
+  { id: 'leaderboard', path: '/leaderboard', icon: Trophy, label: 'Liderlik' },
+  { id: 'admin_reset', path: '/admin/reset-password', icon: KeyRound, label: 'Şifre Sıfırla' },
+];
+
 export default function BottomNav({ isMuted, userRole }: BottomNavProps) {
   const location = useLocation();
   const activePath = location.pathname;
 
+  // Role göre hangi menünün gösterileceğini seçen mantık
+  let visibleNavItems;
   const lowerCaseRole = userRole?.toLowerCase();
-  const isCoachOrAdmin = lowerCaseRole === 'koç' || lowerCaseRole === 'admin';
 
-  // Koç/Admin girişi yapıldığında gösterilecek menü
-  const coachNavItems = [
-    { id: 'coach_home', path: '/coach', icon: Home, label: 'Ana Panel' },
-    { id: 'leaderboard', path: '/leaderboard', icon: Trophy, label: 'Liderlik' },
-  ];
-
-  const visibleNavItems = isCoachOrAdmin ? coachNavItems : navItems;
+  if (lowerCaseRole === 'admin') {
+    visibleNavItems = adminNavItems;
+  } else if (lowerCaseRole === 'koç') {
+    visibleNavItems = coachNavItems;
+  } else {
+    visibleNavItems = studentNavItems;
+  }
 
   if (visibleNavItems.length === 0) {
       return null;
@@ -41,7 +53,7 @@ export default function BottomNav({ isMuted, userRole }: BottomNavProps) {
         <div className="flex justify-around py-2">
           {visibleNavItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activePath === item.path || (item.path === '/coach' && (activePath === '/' || activePath.startsWith('/student')));
+            const isActive = activePath === item.path || (item.path === '/coach' && (activePath.startsWith('/student')));
 
             return (
               <Link

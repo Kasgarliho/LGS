@@ -16,6 +16,7 @@ import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
 import { useScheduler } from '@/hooks/useScheduler';
 
+// Context tipi basitleştirildi
 export type AppContextType =
   ReturnType<typeof useAuthContext> &
   ReturnType<typeof useCoreData> &
@@ -35,26 +36,20 @@ export default function AppLayout() {
   const [isMuted, setIsMuted] = useState(() => storage.loadIsMuted());
   const [theme, setTheme] = useState<'light' | 'dark' | null>(null);
   const [pendingChallenges, setPendingChallenges] = useState<Challenge[]>([]);
-
   const location = useLocation();
   const navigate = useNavigate();
-
   const isHomePage = location.pathname === '/' || location.pathname === '/derslerim';
-
   const auth = useAuthContext();
   const { userId, userName, userRole } = auth;
 
-  // === YÖNLENDİRME DÜZELTMESİ BURADA ===
   useEffect(() => {
     const lowerCaseRole = userRole?.toLowerCase();
     if (lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') {
-        // Eğer bir koç, öğrenci sayfalarından birine (ana sayfa, derslerim vb.) düşerse, onu doğrudan koç paneline yönlendir.
         if (location.pathname === '/' || location.pathname === '/derslerim' || location.pathname === '/practice') {
              navigate('/coach', { replace: true });
         }
     }
   }, [userRole, navigate, location.pathname]);
-  // ===================================
 
   const coreData = useCoreData(userId, userName, userRole, isInitialized, isMuted);
   const studyData = useStudyData(userId, isInitialized, isMuted, (result, newDailySolvedCount) => {
@@ -76,32 +71,25 @@ export default function AppLayout() {
       setPendingChallenges([]);
       return;
     }
-
     const fetchChallenges = async () => {
       const { data, error } = await supabase.rpc('get_pending_challenges', { p_user_id: userId });
       if (error) console.error("Meydan okumalar çekilirken hata:", error);
       else if (data) setPendingChallenges(data);
     };
     fetchChallenges();
-
     const channel = supabase.channel(`challenges_for_${userId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'challenges', filter: `opponent_id=eq.${userId}` },
         () => fetchChallenges()
       ).subscribe();
-
     return () => {
       if (channel) {
         channel.unsubscribe();
       }
     };
   }, [userId]);
-
+  
   useEffect(() => {
-    if (userId) {
-      setTheme(storage.loadTheme(userId));
-    } else {
-      setTheme('dark');
-    }
+    if (userId) { setTheme(storage.loadTheme(userId)); } else { setTheme('dark'); }
   }, [userId]);
 
   useEffect(() => {
@@ -120,16 +108,13 @@ export default function AppLayout() {
       return listener;
     };
     const listenerPromise = checkDeepLink();
-    return () => {
-      listenerPromise.then(l => l.remove());
-    };
+    return () => { listenerPromise.then(l => l.remove()); };
   }, [navigate]);
 
   useEffect(() => {
     if (userId && userRole !== 'koç' && userRole !== 'admin' && studyData.lastActiveDate && coreData.setStreak) {
       const { lastActiveDate, setLastActiveDate } = studyData;
       const { streak, streakFreezes, setStreak, setStreakFreezes } = coreData;
-
       const today = new Date();
       const todayStr = today.toLocaleDateString();
       if (lastActiveDate !== todayStr) {
@@ -137,15 +122,10 @@ export default function AppLayout() {
         try {
           const dateParts = lastActiveDate.split('.').map(Number);
           lastDate.setFullYear(dateParts[2], dateParts[1] - 1, dateParts[0]);
-        } catch (e) {
-           console.error("Tarih formatı hatası:", e);
-           return;
-        }
-
+        } catch (e) { console.error("Tarih formatı hatası:", e); return; }
         const yesterday = new Date();
         yesterday.setDate(today.getDate() - 1);
         const yesterdayStart = new Date(yesterday.setHours(0, 0, 0, 0));
-
         if (lastDate.getTime() < yesterdayStart.getTime()) {
           if (streak > 0) {
             if (streakFreezes > 0) {
@@ -165,13 +145,9 @@ export default function AppLayout() {
 
   useEffect(() => {
     const requestPermissions = async () => {
-      try {
-        await LocalNotifications.requestPermissions();
-      } catch (e) {
-        console.error("Bildirim izni istenemedi.", e);
-      } finally {
-        setIsInitialized(true);
-      }
+      try { await LocalNotifications.requestPermissions(); } 
+      catch (e) { console.error("Bildirim izni istenemedi.", e); } 
+      finally { setIsInitialized(true); }
     };
     requestPermissions();
   }, []);
@@ -183,7 +159,7 @@ export default function AppLayout() {
   }, [coreData.isCloudDataLoaded, userId, studyData.subjects, userRole, coreData]);
 
   useEffect(() => { storage.saveIsMuted(isMuted); }, [isMuted]);
-
+  
   useEffect(() => {
     if (theme) {
       document.documentElement.classList.remove('light', 'dark');
@@ -194,34 +170,18 @@ export default function AppLayout() {
 
   const toggleMute = () => setIsMuted(prev => !prev);
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
-
   const handleQuizCompletion = async (solvedStats: SolvedStat[], subjectId: string) => {
     if (!studyData.handleQuizCompletion || !coreData.checkAchievements) return;
     await studyData.handleQuizCompletion(solvedStats, subjectId);
     const incorrectCount = solvedStats.filter(s => !s.correct).length;
-    coreData.checkAchievements(studyData.subjects, {
-      type: 'quiz',
-      data: { quizResult: { correct: 6 - incorrectCount, incorrect: incorrectCount } }
-    });
+    coreData.checkAchievements(studyData.subjects, { type: 'quiz', data: { quizResult: { correct: 6 - incorrectCount, incorrect: incorrectCount } } });
   };
-
   const handleEnglishUnitUnlocked = () => {
-    if (coreData.checkAchievements) {
-      coreData.checkAchievements(studyData.subjects, { type: 'english_unit' });
-    }
+    if (coreData.checkAchievements) { coreData.checkAchievements(studyData.subjects, { type: 'english_unit' }); }
   };
-
-  const dismissChallenge = (challengeId: string) => {
-    setPendingChallenges(prev => prev.filter(c => c.id !== challengeId));
-  };
-
-  const totalQuestions = useMemo(() => {
-    return studyData.subjects?.reduce((sum, s) => sum + s.correct + s.incorrect, 0) || 0;
-  }, [studyData.subjects]);
-
-  const unlockedAchievements = useMemo(() => {
-      return coreData.achievements?.filter(a => a.unlocked).length || 0;
-  }, [coreData.achievements]);
+  const dismissChallenge = (challengeId: string) => { setPendingChallenges(prev => prev.filter(c => c.id !== challengeId)); };
+  const totalQuestions = useMemo(() => studyData.subjects?.reduce((sum, s) => sum + s.correct + s.incorrect, 0) || 0, [studyData.subjects]);
+  const unlockedAchievements = useMemo(() => coreData.achievements?.filter(a => a.unlocked).length || 0, [coreData.achievements]);
 
   const contextValue: AppContextType = {
     ...auth, ...studyData, ...coreData, ...scheduler,
@@ -229,7 +189,7 @@ export default function AppLayout() {
     isMuted, toggleMute,
     pendingChallenges, dismissChallenge,
   };
-
+  
   if (auth.authLoading || !coreData.isCloudDataLoaded) {
     return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Uygulama Yükleniyor...</p></div>;
   }

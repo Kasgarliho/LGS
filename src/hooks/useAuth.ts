@@ -4,27 +4,19 @@ import { toast } from 'sonner';
 import { Session } from '@supabase/supabase-js';
 import { playIntroSound, playSuccessSound, playFailSound } from '@/utils/sounds';
 import { storage } from '@/utils/storage';
+import { useNavigate } from 'react-router-dom';
 
-// Bu fonksiyon, tüm isimleri standart bir formata çevirir.
 const normalizeText = (text: string) => {
   if (!text) return "";
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/ /g, '')
-    .replace(/ı/g, 'i')
-    .replace(/ş/g, 's')
-    .replace(/ğ/g, 'g')
-    .replace(/ü/g, 'u')
-    .replace(/ö/g, 'o')
-    .replace(/ç/g, 'c');
+  return text.trim().toLowerCase().replace(/ /g, '').replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c');
 };
 
 export const useAuth = (isMuted: boolean) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  
+  const navigate = useNavigate();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [regFullName, setRegFullName] = useState("");
@@ -105,7 +97,6 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
   
-  // === ÖN KAYIT KONTROLÜNÜ İÇEREN DOĞRU FONKSİYON ===
   const handleNewStudentRegistration = async (): Promise<boolean> => {
     if (!regFullName || !regClassName || !regCoachCode || !regEmail || !regPassword || !regConfirmPassword) {
       toast.error("Tüm alanları doldurmalısınız.");
@@ -121,11 +112,9 @@ export const useAuth = (isMuted: boolean) => {
     }
 
     try {
-      // 1. Öğrencinin girdiği Ad/Soyad ve Sınıf bilgilerini "temizle".
       const normalizedFullName = normalizeText(regFullName);
       const finalClassName = regClassName.trim();
       
-      // 2. Veritabanındaki `onkayit_ogrenciler` tablosunda bu temizlenmiş isme sahip bir kayıt var mı diye kontrol et.
       const { data: preRegData, error: preRegError } = await supabase
         .from('onkayit_ogrenciler')
         .select('*')
@@ -133,7 +122,6 @@ export const useAuth = (isMuted: boolean) => {
         .ilike('sinif', finalClassName)
         .single();
         
-      // 3. Kayıt bulunamazsa, hata ver.
       if (preRegError || !preRegData) {
         throw new Error("Ön kayıt bulunamadı. Lütfen Ad Soyad ve Sınıf bilgilerinizi kontrol edin.");
       }
@@ -141,20 +129,18 @@ export const useAuth = (isMuted: boolean) => {
         throw new Error("Bu öğrenci için zaten bir hesap oluşturulmuş.");
       }
 
-      // 4. Otomatik kullanıcı adını oluştur ve daha önce alınıp alınmadığını kontrol et.
       const generatedUsername = normalizeText(regFullName);
       const { data: usernameCheck } = await supabase.from('kullanicilar').select('id').eq('kullanici_adi', generatedUsername).single();
       if (usernameCheck) {
         throw new Error(`'${generatedUsername}' kullanıcı adı zaten alınmış. Lütfen yöneticinizle iletişime geçin.`);
       }
 
-      // 5. Her şey yolundaysa, öğrencinin hesabını oluştur.
       const { data: { user }, error: signUpError } = await supabase.auth.signUp({
         email: regEmail.trim().toLowerCase(),
         password: regPassword,
         options: {
           data: {
-            ad_soyad: preRegData.ad_soyad, // Veritabanındaki orijinal, düzgün ismi kullan
+            ad_soyad: preRegData.ad_soyad,
             koc_kodu: preRegData.koc_kodu,
             kullanici_adi: generatedUsername,
             rol: 'ogrenci',
@@ -165,7 +151,6 @@ export const useAuth = (isMuted: boolean) => {
       if (signUpError) throw signUpError;
       if (!user) throw new Error("Kullanıcı oluşturulamadı, lütfen tekrar deneyin.");
 
-      // 6. Ön kayıt tablosunu güncelle.
       const { error: preRegUpdateError } = await supabase
         .from('onkayit_ogrenciler')
         .update({ kayit_tamamlandi: true })
@@ -204,9 +189,9 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
-  // === ÇIKIŞ YAPMA FONKSİYONUNUN DÜZELTİLMİŞ HALİ ===
   const handleLogout = async () => { 
     await supabase.auth.signOut({ scope: 'local' });
+    navigate('/login', { replace: true });
   };
 
   const handleChangePassword = async (currentPassword: string, newPassword: string): Promise<boolean> => { 

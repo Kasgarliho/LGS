@@ -1,9 +1,6 @@
-import { Toaster as SonnerToaster } from "sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createBrowserRouter, RouterProvider, Navigate, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react"; 
-import { useAuthContext, AuthProvider } from "./contexts/AuthContext";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuthContext } from "./contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,14 +23,7 @@ import StudentDetailPage from "./pages/StudentDetailPage";
 import SchedulePage from "./pages/SchedulePage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import WordQuizPage from "./pages/WordQuizPage";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import AdminPage from "./pages/AdminPage";
 
 const StatisticsPage = () => {
   const context = useAppContext();
@@ -48,7 +38,8 @@ const AchievementsPage = () => {
 
 const LoginPage = () => {
     const auth = useAuthContext();
-    const [activeTab, setActiveTab] = useState("login");
+    const location = useLocation();
+    const [activeTab, setActiveTab] = useState(location.state?.openRegister ? "register" : "login");
     const [isRegisterSuccess, setIsRegisterSuccess] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     const [resetEmail, setResetEmail] = useState("");
@@ -156,65 +147,43 @@ const LoginPage = () => {
 
 const ProtectedRoute = () => {
     const { session, profile, authLoading } = useAuthContext();
-
     if (authLoading) {
         return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Yükleniyor...</p></div>;
     }
-
     if (!session) {
         return <Navigate to="/login" replace />;
     }
-
     if (!profile) {
         return <div className="fixed inset-0 flex items-center justify-center bg-background"><p>Profil bilgileri alınıyor...</p></div>;
     }
-
     return <AppLayout />;
 };
 
-// === DEĞİŞİKLİK BURADA YAPILDI ===
-// "index: true" artık PracticePage'i gösteriyor.
-// Eski ana sayfa (Index) ise "derslerim" yoluna taşındı.
-const router = createBrowserRouter([
-    {
-        path: "/login",
-        element: <LoginPage />
-    },
-    {
-        path: "/",
-        element: <ProtectedRoute />,
-        children: [
-            { path: 'update-password', element: <div>Şifre güncelleme sayfası</div> },
-            { index: true, element: <PracticePage /> }, // YENİ AÇILIŞ SAYFASI
-            { path: "derslerim", element: <Index /> }, // ESKİ ANA SAYFA BURAYA TAŞINDI
-            { path: "program", element: <ProgramimSayfasi /> },
-            { path: "practice", element: <PracticePage /> }, // Bu satır kalsa da olur, aynı sayfaya yönlendirir.
-            { path: "statistics", element: <StatisticsPage /> },
-            { path: "achievements", element: <AchievementsPage /> },
-            { path: "market", element: <MarketPage /> },
-            { path: "profile", element: <ProfilePage /> },
-            { path: "settings", element: <SettingsPage /> },
-            { path: "gecmis", element: <GecmisKayitlarSayfasi /> },
-            { path: "leaderboard", element: <LeaderboardPage /> },
-            { path: "word-quiz/:unitId", element: <WordQuizPage /> },
-            { path: "student/:studentId", element: <StudentDetailPage /> },
-            { path: "coach", element: <SchedulePage /> },
-        ],
-        errorElement: <NotFound />,
-    },
-]);
-
-const App = () => {
+function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <SonnerToaster position="top-center" />
-          <RouterProvider router={router} />
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/" element={<ProtectedRoute />}>
+        <Route index element={<PracticePage />} />
+        <Route path="derslerim" element={<Index />} />
+        <Route path="program" element={<ProgramimSayfasi />} />
+        <Route path="practice" element={<PracticePage />} />
+        <Route path="statistics" element={<StatisticsPage />} />
+        <Route path="achievements" element={<AchievementsPage />} />
+        <Route path="market" element={<MarketPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="gecmis" element={<GecmisKayitlarSayfasi />} />
+        <Route path="leaderboard" element={<LeaderboardPage />} />
+        <Route path="word-quiz/:unitId" element={<WordQuizPage />} />
+        <Route path="student/:studentId" element={<StudentDetailPage />} />
+        <Route path="coach" element={<SchedulePage />} />
+        <Route path="admin/reset-password" element={<AdminPage />} />
+        <Route path="update-password" element={<div>Şifre güncelleme sayfası</div>} />
+      </Route>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
-};
+}
 
 export default App;

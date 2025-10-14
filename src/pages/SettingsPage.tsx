@@ -3,15 +3,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BellRing, History, ChevronRight, LogOut, User, Users, Swords, KeyRound } from "lucide-react";
+import { BellRing, History, ChevronRight, LogOut, User, Swords, KeyRound } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAppContext } from "./AppLayout";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // DialogDescription'ı farklı bir isimle import et
+import { Dialog, DialogContent, DialogDescription as DialogDescriptionComponent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import  ProfileSwitcher  from "@/components/ProfileSwitcher";
 
 export const SettingsPage = () => {
   const { 
@@ -20,15 +19,9 @@ export const SettingsPage = () => {
     handleUpdateNotificationSettings, 
     handleLogout, 
     userName, 
-    knownUsers, 
-    userId, 
-    handleSwitchUser, 
-    handleRemoveKnownUser, 
-    showRegistration,
     handleChangePassword 
   } = useAppContext();
 
-  // YENİ: Şifre formu için state'ler
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -104,30 +97,14 @@ export const SettingsPage = () => {
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>İptal</AlertDialogCancel>
-                <AlertDialogAction onClick={() => handleLogout(false)}>Çıkış Yap</AlertDialogAction>
+                <AlertDialogAction onClick={() => handleLogout(false)} className={buttonVariants({ variant: "destructive" })}>
+                  Çıkış Yap
+                </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </CardContent>
       </Card>
-
-      {knownUsers && knownUsers.length > 1 && (
-        <Card className="shadow-card border-border/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5 text-primary" /> Profilleri Yönet</CardTitle>
-            <CardDescription>Bu cihazda kayıtlı profiller arasında geçiş yap veya bir profili kaldır.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProfileSwitcher 
-              knownUsers={knownUsers}
-              activeUserId={userId}
-              onSwitch={handleSwitchUser}
-              onRemove={handleRemoveKnownUser}
-              onAddNew={showRegistration}
-            />
-          </CardContent>
-        </Card>
-      )}
 
       <Card className="shadow-card border-border/50">
         <CardHeader>
