@@ -62,7 +62,9 @@ export default function PasswordResetTool() {
     }
 
     setIsResetting(true);
-    const { error } = await supabase.functions.invoke('sifre-sifirla', {
+    
+    // === DEĞİŞİKLİK BURADA: Fonksiyon adı, sizin oluşturduğunuz doğru isimle güncellendi ===
+    const { error } = await supabase.functions.invoke('admin-change-password', {
       body: {
         user_id: selectedStudent.id,
         new_password: newPassword,
@@ -113,7 +115,7 @@ export default function PasswordResetTool() {
                     key={student.id}
                     onClick={() => {
                       setSelectedStudent(student);
-                      setNewPassword(""); // Yeni öğrenci seçildiğinde şifre alanını temizle
+                      setNewPassword("");
                     }}
                     className={cn(
                       "w-full text-left p-2 rounded-md flex items-center gap-2 transition-colors",
