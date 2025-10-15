@@ -189,7 +189,7 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
-  const handleLogout = async () => { 
+  const handleLogout = async (p0: boolean) => { 
     await supabase.auth.signOut({ scope: 'local' });
     navigate('/login', { replace: true });
   };

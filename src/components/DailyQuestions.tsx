@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Target, CheckCircle, Book } from "lucide-react";
 import { Subject } from "@/types";
+import { cn } from "@/lib/utils"; // cn utility'sini import ediyoruz
 
 interface DailyQuestionsProps {
   dailyQuestionsCount: number;
@@ -27,12 +28,15 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
   };
 
   return (
-    <Card className="shadow-card border-border/50 animate-slide-up">
+    <Card className={cn(
+      "bg-card backdrop-blur-sm border border-border", // GLASS EFEKTİ EKLENDİ
+      "animate-slide-up"
+    )}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2 text-xl">
-              <div className="gradient-primary p-2 rounded-lg">
+              <div className="bg-gradient-to-br from-primary/80 to-purple-500/80 p-2 rounded-lg">
                 <Target className="h-5 w-5 text-primary-foreground" />
               </div>
               Günlük Görev
@@ -43,7 +47,7 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
             <div className="mt-1 text-sm text-muted-foreground">Serini devam ettirmek için en az {totalSubjects} ders seç.</div>
             <div className="font-bold text-lg mt-2">{solvedCount}/{totalSubjects} ders tamamlandı.</div>
           </div>
-          <Badge variant="outline" className="gradient-success text-success-foreground border-0 animate-pulse-glow">
+          <Badge variant="outline" className="bg-gradient-to-r from-emerald-500/80 to-green-600/80 text-success-foreground border-0 animate-pulse">
             <CheckCircle className="h-3 w-3 mr-1" />
             {solvedCount * 6} / {dailyQuestionsCount} Soru
           </Badge>
@@ -54,10 +58,14 @@ export default function DailyQuestions({ dailyQuestionsCount, availableSubjects,
         {availableSubjects.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {availableSubjects.map(subject => (
-              // DÜZELTME: Kart yapısı dikey hizalamaya göre yeniden düzenlendi
               <Card 
                 key={subject.id} 
-                className="hover:shadow-elegant transition-shadow cursor-pointer border-border/50 flex flex-col justify-between"
+                className={cn(
+                  "bg-muted/30 hover:bg-muted/50", // Arka planı biraz daha belirgin yaptık
+                  "transition-all duration-300 cursor-pointer",
+                  "border border-border hover:border-primary/50",
+                  "flex flex-col justify-between"
+                )}
                 onClick={() => onSelectSubject(subject.id)}
               >
                 <CardContent className="p-4 flex flex-col items-center text-center flex-1">
