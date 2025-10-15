@@ -1,102 +1,6 @@
 import { Question } from "@/types";
 
 export const scienceQuestions: Question[] = [
-   {
-    id: 'og_tur_1', subjectId: 'turkish', topic: 'Anlam Bilgisi', difficulty: 'medium',
-    question: 'Aşağıdaki cümlelerin hangisinde "burun" sözcüğü deyim içinde kullanılmamıştır?',
-    options: ['Her işe burnunu sokmasından hoşlanmıyorum.','Babasının burnundan düşmüş, tıpkı o.','Kaza yapınca burnu bile kanamamış.','Burnumdaki sızı beni rahatsız ediyor.'], correctAnswer: 3,
-    explanation: '"Burnumdaki sızı beni rahatsız ediyor." cümlesinde burun kelimesi gerçek anlamıyla kullanılmıştır. Diğer seçeneklerdeki "burnunu sokmak", "burnundan düşmek" ve "burnu kanamamak" birer deyimdir.'
-  },
-  {
-    id: 'og_tur_2', subjectId: 'turkish', topic: 'Yazım Kuralları', difficulty: 'medium',
-    question: 'Aşağıdaki cümlelerin hangisinde bir yazım yanlışı vardır?',
-    options: ['TDK\'nin yeni kurallarını inceledin mi?','Herşey yolunda gibi görünüyordu.','Bu konuyu da yarın görüşürüz.','19 Mayıs 1919\'da Samsun\'a çıktı.'], correctAnswer: 1,
-    explanation: '"Herşey" kelimesi ayrı yazılmalıdır. Doğru yazımı "her şey" şeklindedir.'
-  },
-  {
-    id: 'og_tur_3', subjectId: 'turkish', topic: 'Söz Sanatları', difficulty: 'hard',
-    question: '"Güneş, altın saçlarını yeryüzüne serpiyordu." cümlesindeki söz sanatı aşağıdakilerden hangisidir?',
-    options: ['Benzetme', 'Kişileştirme', 'Abartma', 'Konuşturma'], correctAnswer: 1,
-    explanation: 'Kişileştirme, insan dışındaki varlıklara insan özelliği verilmesidir. "Güneş"e "saç" verilmesi kişileştirme sanatına örnektir.'
-  },
-  {
-    id: 'og_tur_4', subjectId: 'turkish', topic: 'Cümlenin Öğeleri', difficulty: 'medium',
-    question: '"Uzun bir yolculuktan sonra küçük bir kasabaya geldik." cümlesinin yüklemi hangisidir?',
-    options: ['geldik', 'kasabaya geldik', 'bir kasabaya geldik', 'küçük bir kasabaya geldik'], correctAnswer: 0,
-    explanation: 'Yüklem, cümlede iş, oluş, durum bildiren çekimli fiildir. Bu cümlede yüklem "geldik" fiilidir.'
-  },
-  {
-    id: 'og_tur_5', subjectId: 'turkish', topic: 'Noktalama İşaretleri', difficulty: 'easy',
-    question: 'Cümle sonuna konulan (.) işareti aşağıdakilerden hangisidir?',
-    options: ['Ünlem', 'Soru İşareti', 'Nokta', 'Virgül'], correctAnswer: 2,
-    explanation: 'Cümle sonuna konulan işaret, cümle tamamlandığında kullanılan Nokta işaretidir.'
-  },
-  {
-    id: 'og_tur_6', subjectId: 'turkish', topic: 'Fiilimsiler', difficulty: 'hard',
-    question: 'Aşağıdaki cümlelerin hangisinde isim-fiil kullanılmıştır?',
-    options: ['Koşarak yanımdan uzaklaştı.', 'Gülmek sana çok yakışıyor.', 'Gelen gideni aratır derler.', 'Okunacak çok kitap var.'], correctAnswer: 1,
-    explanation: 'İsim-fiil, fiillere "-ma, -ış, -mak" ekleri getirilerek oluşturulur. "Gülmek" kelimesi bu kurala uyar.'
-  },
-  {
-    id: 'og_tur_7', subjectId: 'turkish', topic: 'Cümle Türleri', difficulty: 'medium',
-    question: 'Aşağıdaki cümlelerin hangisi yapısına göre birleşik cümledir?',
-    options: ['Çok yorulduğu için erken yattı.','Çalıştıkça başarısı artıyor.','Kitabı okudu ve bitirdi.','Hava çok sıcaktı, bu yüzden dışarı çıkmadık.'], correctAnswer: 1,
-    explanation: 'Birleşik cümleler, bir temel cümle ve en az bir yan cümlecikten oluşur. "Çalıştıkça" sözcüğü bir yan cümleciktir.'
-  },
-  {
-    id: 'og_tur_8', subjectId: 'turkish', topic: 'Ses Bilgisi', difficulty: 'easy',
-    question: 'Aşağıdaki kelimelerden hangisi ünlü düşmesine uğramıştır?',
-    options: ['kaplumbağa', 'dostluk', 'kayboldu', 'babaanne'], correctAnswer: 2,
-    explanation: '"Kayboldu" kelimesi "kayıp" ve "oldu" kelimelerinin birleşimiyle oluşmuş ve aradaki "ı" ünlüsü düşmüştür.'
-  },
-  {
-    id: 'og_tur_9', subjectId: 'turkish', topic: 'Anlatım Bozuklukları', difficulty: 'hard',
-    question: 'Hangi cümlede gereksiz sözcük kullanımından kaynaklanan bir anlatım bozukluğu vardır?',
-    options: ['Herkes bu konuyu biliyor.', 'Aradan tam beş yıl geçti.','Birlikte el ele tutuşarak yürüdüler.','Bu konuyu tekrar gözden geçirmelisin.'], correctAnswer: 2,
-    explanation: '"Birlikte" ve "el ele tutuşarak" aynı anlama geldiği için ikisinden birinin kullanılması yeterlidir.'
-  },
-  {
-    id: 'og_tur_10', subjectId: 'turkish', topic: 'Paragrafta Anlam', difficulty: 'medium',
-    question: 'Paragrafta asıl anlatılmak istenen düşünceye ne ad verilir?',
-    options: ['Yardımcı düşünce', 'Ana fikir', 'Konu', 'Başlık'], correctAnswer: 1,
-    explanation: 'Paragrafta asıl anlatılmak istenen ve yazarın okuyucuya vermek istediği mesaja ana fikir denir.'
-  },
-  {
-    id: 'og_mat_1', subjectId: 'math', topic: 'Üslü İfadeler', difficulty: 'medium',
-    question: 'Bir kenarı 2^5 cm olan karenin alanı kaç cm²\'dir?',
-    options: ['2^7', '4^5', '2^10', '4^10'], correctAnswer: 2,
-    explanation: 'Karenin alanı kenar uzunluğunun karesidir. (2^5)^2 = 2^(5*2) = 2^10.'
-  },
-  {
-    id: 'og_mat_2', subjectId: 'math', topic: 'Karekök', difficulty: 'medium',
-    question: 'Alanı 144 m² olan kare şeklindeki bir bahçenin bir kenar uzunluğu kaç metredir?',
-    options: ['12', '14', '16', '18'], correctAnswer: 0,
-    explanation: 'Karenin bir kenar uzunluğu, alanın karekökü alınarak bulunur. √144 = 12 metredir.'
-  },
-  {
-    id: 'og_mat_3', subjectId: 'math', topic: 'Olasılık', difficulty: 'easy',
-    question: 'Bir zar atıldığında üst yüze gelen sayının asal olma olasılığı nedir?',
-    options: ['1/3', '1/2', '2/3', '1/6'], correctAnswer: 1,
-    explanation: 'Bir zarın üst yüzüne gelebilecek sayılar: {1, 2, 3, 4, 5, 6}. Asal sayılar: {2, 3, 5}. Toplam 3 asal sayı vardır. Olasılık: 3/6 = 1/2.'
-  },
-  {
-    id: 'og_mat_4', subjectId: 'math', topic: 'Cebirsel İfadeler', difficulty: 'medium',
-    question: '2(x+3) - 5x ifadesinin en sade hali nedir?',
-    options: ['-3x + 6', '-3x + 3', '-3x', '2x - 3'], correctAnswer: 0,
-    explanation: 'Önce parantezi dağıtırız: 2x + 6 - 5x. Sonra benzer terimleri birleştiririz: (2x - 5x) + 6 = -3x + 6.'
-  },
-  {
-    id: 'og_mat_5', subjectId: 'math', topic: 'Doğrusal Denklemler', difficulty: 'easy',
-    question: '3x - 5 = 10 denkleminin çözüm kümesi nedir?',
-    options: ['x=3', 'x=4', 'x=5', 'x=6'], correctAnswer: 2,
-    explanation: 'Denklemi çözmek için -5\'i karşı tarafa +5 olarak atarız: 3x = 15. Her iki tarafı 3\'e bölersek x=5 bulunur.'
-  },
-  {
-    id: 'og_mat_6', subjectId: 'math', topic: 'Oran ve Orantı', difficulty: 'medium',
-    question: 'Bir sınıftaki kız öğrencilerin sayısının erkek öğrencilerin sayısına oranı 2/3\'tür. Sınıfta 20 kız öğrenci varsa, kaç erkek öğrenci vardır?',
-    options: ['25', '30', '35', '40'], correctAnswer: 1,
-    explanation: 'Kız/erkek = 2/3. 20/erkek = 2/3 ise, 2*erkek = 20*3 yani 2*erkek = 60. erkek = 30.'
-  },
   {
     id: 'og_fen_1', subjectId: 'science', topic: 'DNA ve Genetik Kod', difficulty: 'medium',
     question: 'DNA molekülünde Adenin nükleotidinin karşısına her zaman hangisi gelir?',
@@ -363,6 +267,5 @@ export const scienceQuestions: Question[] = [
     options: ['Buzun erimesi', 'Şekerin erimesi', 'Suyun buharlaşması', 'Kağıdın yanması'],
     correctAnswer: 3,
     explanation: 'Kağıdın yanması, yeni maddelerin oluştuğu kimyasal bir değişimdir.'
-  },
- 
+  }
 ];

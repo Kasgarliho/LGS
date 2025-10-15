@@ -1,14 +1,7 @@
 import { Question } from "@/types";
 
 export const revolutionQuestions: Question[] = [
- 
   {
-    id: 'og_ink_1', subjectId: 'revolution', topic: 'Milli Mücadele', difficulty: 'medium',
-    question: 'Aşağıdakilerden hangisi Sivas Kongresi’nde alınan kararlardan biri değildir?',
-    options: ['Manda ve himayenin kesin olarak reddedilmesi','Tüm cemiyetlerin tek çatı altında birleştirilmesi','Temsil Heyeti\'nin oluşturulması','Türkiye Büyük Millet Meclisi\'nin açılması'], correctAnswer: 3,
-    explanation: 'TBMM, Sivas Kongresi\'nden sonra, 23 Nisan 1920\'de Ankara\'da açılmıştır. Kongrenin kararı değildir.'
-  },
-    {
     id: 'og_ink_1', subjectId: 'revolution', topic: 'Milli Mücadele', difficulty: 'medium',
     question: 'Aşağıdakilerden hangisi Sivas Kongresi’nde alınan kararlardan biri değildir?',
     options: ['Manda ve himayenin kesin olarak reddedilmesi','Tüm cemiyetlerin tek çatı altında birleştirilmesi','Temsil Heyeti\'nin oluşturulması','Türkiye Büyük Millet Meclisi\'nin açılması'], correctAnswer: 3,
@@ -262,5 +255,4 @@ export const revolutionQuestions: Question[] = [
     correctAnswer: 2,
     explanation: 'İnkılapçılık, çağın gereksinimlerine uygun olarak sürekli yenilik ve değişim yapma ilkesidir.'
   },
-
 ];

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react'; // useMemo eklendi
 import { storage } from '@/utils/storage';
 import { supabase } from '@/supabaseClient';
 import { toast } from 'sonner';
@@ -21,6 +21,15 @@ export const useCoreData = (
   const [userAvatars, setUserAvatars] = useState<UserAvatars>({ current: 'default', unlocked: ['default'] });
   const [challengeWins, setChallengeWins] = useState(0);
   const [isCloudDataLoaded, setIsCloudDataLoaded] = useState(false);
+
+  // --- YENİDEN DÜZENLEME (REFACTORING) BAŞLANGICI ---
+  // Rol kontrolünü tek bir yerde yapıyoruz.
+  const isPrivilegedUser = useMemo(() => {
+    const lowerCaseRole = userRole?.toLowerCase();
+    return lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca';
+  }, [userRole]);
+  // --- YENİDEN DÜZENLEME (REFACTORING) SONU ---
+
 
   const updateUserCloudData = async (dataToUpdate: object) => {
     if (!userId || !isInitialized) return;
@@ -55,12 +64,9 @@ export const useCoreData = (
         
         if (!error && cloudData) {
             const isTestAccount = cloudData.is_test_account === true;
-            const lowerCaseRole = userRole?.toLowerCase();
-            const isPrivilegedRole = lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca';
-
-            // === KOÇ/TEST HESABI İÇİN AVATAR KAYDETME DÜZELTMESİ ===
-            if (isPrivilegedRole || isTestAccount) {
-                // 1. Önce veritabanından kayıtlı avatar bilgisini güvenle alalım.
+            
+            // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+            if (isPrivilegedUser || isTestAccount) {
                 let savedAvatarCurrent = 'default';
                 if (cloudData.avatar) {
                     try {
@@ -71,7 +77,6 @@ export const useCoreData = (
                     } catch (e) { /* Hata olursa varsayılanı kullan */ }
                 }
 
-                // 2. Tüm avatarların kilidini aç ve kayıtlı avatarı ata.
                 const allAvatarIds = allAvatars.map(avatar => avatar.id);
                 const finalPrivilegedAvatars: UserAvatars = {
                     current: savedAvatarCurrent,
@@ -80,13 +85,11 @@ export const useCoreData = (
                 setUserAvatars(finalPrivilegedAvatars);
                 storage.saveUserAvatars(userId, finalPrivilegedAvatars);
 
-                // 3. Diğer özel ayrıcalıkları ata.
                 setTotalPoints(9999);
                 setStreak(99);
                 setAchievements(initialAchievementsData.map(a => ({ ...a, unlocked: true, unlockedAt: new Date() })));
                 setChallengeWins(999);
             } else {
-                // Normal öğrenciler için zaten çalışan sağlamlaştırılmış kod
                 setTotalPoints(cloudData.puan ?? 0);
                 setStreak(cloudData.seri ?? 0);
                 setStreakFreezes(cloudData.seri_dondurma ?? 0);
@@ -123,10 +126,11 @@ export const useCoreData = (
     };
     fetchCoreData();
 
-  }, [userId, userRole, userName]);
+  }, [userId, userRole, userName, isPrivilegedUser]); // isPrivilegedUser eklendi
 
   useEffect(() => {
-    if (!isInitialized || !userId || userRole?.toLowerCase() === 'koç' || userRole?.toLowerCase() === 'admin') return;
+    // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+    if (!isInitialized || !userId || isPrivilegedUser) return;
     
     const debounceTimer = setTimeout(() => {
         storage.savePoints(userId, totalPoints);
@@ -141,15 +145,16 @@ export const useCoreData = (
     }, 1500);
 
     return () => clearTimeout(debounceTimer);
-  }, [totalPoints, streak, streakFreezes, isInitialized, userId, userRole]);
+  }, [totalPoints, streak, streakFreezes, isInitialized, userId, isPrivilegedUser]); // userRole yerine isPrivilegedUser
 
   useEffect(() => {
-    if (isInitialized && userId && achievements.length > 0 && userRole?.toLowerCase() !== 'koç' && userRole?.toLowerCase() !== 'admin') {
+    // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+    if (isInitialized && userId && achievements.length > 0 && !isPrivilegedUser) {
       storage.saveAchievements(userId, achievements);
       const unlockedIds = achievements.filter(a => a.unlocked).map(a => a.id);
       updateUserCloudData({ kazanilan_basarimlar: unlockedIds });
     }
-  }, [achievements, isInitialized, userId, userRole]);
+  }, [achievements, isInitialized, userId, isPrivilegedUser]); // userRole yerine isPrivilegedUser
 
   const handleSetAvatar = (avatarId: string) => {
     if (!userId) return;
@@ -167,8 +172,8 @@ export const useCoreData = (
   };
 
   const handleBuyAvatar = (avatarId: string) => {
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+    if (!userId || isPrivilegedUser) return;
     const avatar = allAvatars.find(a => a.id === avatarId);
     if (!avatar || avatar.unlockMethod !== 'purchase') return;
     const price = avatar.price || 0;
@@ -189,8 +194,8 @@ export const useCoreData = (
   };
   
   const handleBuyStreakFreeze = () => {
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+    if (!userId || isPrivilegedUser) return;
     const price = 200;
     if (totalPoints >= price) {
       setTotalPoints(prev => prev - price);
@@ -202,8 +207,8 @@ export const useCoreData = (
   };
 
   const checkAchievements = (subjects: Subject[], trigger: { type: 'quiz' | 'questions' | 'english_unit', data?: any }) => {
-    const lowerCaseRole = userRole?.toLowerCase();
-    if (!userId || lowerCaseRole === 'koç' || lowerCaseRole === 'admin' || lowerCaseRole === 'hoca') return;
+    // --- DÜZENLEME: Tek değişkeni kullanıyoruz ---
+    if (!userId || isPrivilegedUser) return;
     
     const totalQuestions = subjects.reduce((sum, s) => sum + s.correct + s.incorrect, 0);
     

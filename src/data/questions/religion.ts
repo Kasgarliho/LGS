@@ -1,13 +1,7 @@
 import { Question } from "@/types";
 
 export const religionQuestions: Question[] = [
-  // --- KULLANICIDAN GELEN MEVCUT SORULAR ---
   {
-    id: 'og_din_1', subjectId: 'religion', topic: 'Kader ve Kaza', difficulty: 'easy',
-    question: 'Allah’ın her şeyi bir ölçü ve düzene göre yaratmasına ne denir?',
-    options: ['Kaza', 'Kader', 'Ecel', 'Tevekkül'], correctAnswer: 1,
-    explanation: 'Kader, Allah\'ın evrende olacak her şeyi önceden bilmesi ve takdir etmesidir.'
-  },  {
     id: 'og_din_1', subjectId: 'religion', topic: 'Kader ve Kaza', difficulty: 'easy',
     question: 'Allah’ın her şeyi bir ölçü ve düzene göre yaratmasına ne denir?',
     options: ['Kaza', 'Kader', 'Ecel', 'Tevekkül'], correctAnswer: 1,
@@ -268,5 +262,4 @@ export const religionQuestions: Question[] = [
     correctAnswer: 1,
     explanation: 'Hz. Muhammed\'e ilk vahiy, Hira Mağarası\'nda gelmiştir.'
   },
-  
 ];

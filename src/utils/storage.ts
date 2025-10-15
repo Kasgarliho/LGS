@@ -1,6 +1,7 @@
+// src/utils/storage.ts
+
 import { Subject, StudySession, Achievement, ManualSchedule, UserAvatars, LearnedWords, CustomStudyPlan, KnownUser } from '@/types';
 
-// YENİ: NotificationSettings tipi dışa aktarılıyor ve challengeReminder eklendi
 export interface NotificationSettings {
   studyPlanReminder: { enabled: boolean; minutesBefore: number };
   bagReminder: { enabled: boolean; hour: number; minute: number };
@@ -32,6 +33,9 @@ const KNOWN_USERS_KEY = 'lgs_app_known_users';
 
 const createKey = (userId: string, baseKey: string) => `lgs_app_${userId}_${baseKey}`;
 const createGlobalKey = (baseKey: string) => `lgs_app_${baseKey}`;
+
+// --- DEĞİŞİKLİK: Standart tarih formatı için yardımcı fonksiyon ---
+const getTodayDateString = () => new Date().toISOString().split('T')[0];
 
 export const storage = {
   saveCurrentUserId: (userId: string) => localStorage.setItem(CURRENT_USER_ID_KEY, userId),
@@ -108,16 +112,18 @@ export const storage = {
     }
   },
 
-  loadDailySolvedSubjects: (userId: string, todayStr: string): string[] => {
+  // --- DEĞİŞİKLİK: 'todayStr' parametresi artık 'todayDateString' ---
+  loadDailySolvedSubjects: (userId: string, todayDateString: string): string[] => {
     const storedData = localStorage.getItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS));
     if (storedData) {
       const data = JSON.parse(storedData);
-      if (data.date === todayStr) return data.subjects;
+      if (data.date === todayDateString) return data.subjects;
     }
     return [];
   },
+  // --- DEĞİŞİKLİK: Kaydederken standart fonksiyonu kullanıyoruz ---
   saveDailySolvedSubjects: (userId: string, subjects: string[]) => {
-    const today = new Date().toLocaleDateString();
+    const today = getTodayDateString();
     localStorage.setItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS), JSON.stringify({ date: today, subjects }));
   },
   clearDailySolvedSubjects: (userId: string) => localStorage.removeItem(createKey(userId, BASE_KEYS.DAILY_SOLVED_SUBJECTS)),
@@ -131,18 +137,16 @@ export const storage = {
   },
   saveManualSchedule: (schedule: ManualSchedule) => localStorage.setItem(createGlobalKey(BASE_KEYS.MANUAL_SCHEDULE), JSON.stringify(schedule)),
   
-  // YENİ: Varsayılan ayarlara challengeReminder eklendi
   loadNotificationSettings: (): NotificationSettings => {
     const data = localStorage.getItem(createGlobalKey(BASE_KEYS.NOTIFICATION_SETTINGS));
     const defaults: NotificationSettings = {
       studyPlanReminder: { enabled: true, minutesBefore: 15 },
       bagReminder: { enabled: true, hour: 20, minute: 0 },
       streakReminder: true,
-      challengeReminder: true, // Yeni ayar
+      challengeReminder: true,
     };
     if (data) {
       const parsed = JSON.parse(data);
-      // Kayıtlı ayarlarla varsayılanları birleştir
       return {
         ...defaults,
         ...parsed,

@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Check, X, Pencil, Lock } from "lucide-react";
-import { toast } from "sonner"; // toast eklendi
+import { Clock, Check, X, Pencil, Lock, ArrowLeft } from "lucide-react"; // ArrowLeft ikonu eklendi
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom"; // useNavigate eklendi
 
 // Veri tipini tanımlıyoruz
 interface SoruKaydi {
@@ -20,6 +21,7 @@ interface SoruKaydi {
 
 export default function GecmisKayitlarSayfasi() {
   const { subjects } = useAppContext();
+  const navigate = useNavigate(); // Geri gitmek için useNavigate hook'u eklendi
   const [kayitlar, setKayitlar] = useState<SoruKaydi[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,8 +37,15 @@ export default function GecmisKayitlarSayfasi() {
   
   const fetchKayitlar = async () => {
     setLoading(true);
-    const userId = localStorage.getItem('lgs_app_user_id');
-    if (!userId) { setLoading(false); return; }
+    // DEĞİŞİKLİK: userId'yi localStorage'dan değil, context'ten güvenli bir şekilde alıyoruz.
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+    
+    if (!userId) { 
+      setLoading(false); 
+      toast.error("Kullanıcı oturumu bulunamadı.");
+      return; 
+    }
 
     const { data, error } = await supabase
       .from('cozulen_sorular')
@@ -61,9 +70,6 @@ export default function GecmisKayitlarSayfasi() {
     setIsDialogOpen(true);
   };
 
-  // =================================================================
-  // GÜNCELLENEN KAYDETME FONKSİYONU
-  // =================================================================
   const handleSaveChanges = async () => {
     if (!selectedRecord) return;
 
@@ -79,7 +85,6 @@ export default function GecmisKayitlarSayfasi() {
       toast.error("Kayıt güncellenirken bir hata oluştu.");
       console.error("Güncelleme hatası:", error);
     } else {
-      // Başarılı olursa, ekrandaki listeyi de anında güncelle (optimistic update)
       setKayitlar(prevKayitlar => 
         prevKayitlar.map(k => 
           k.id === selectedRecord.id 
@@ -91,14 +96,24 @@ export default function GecmisKayitlarSayfasi() {
       setIsDialogOpen(false);
     }
   };
-  // =================================================================
 
   if (loading) {
     return <div className="text-center p-8">Yükleniyor...</div>;
   }
 
   return (
-    <div className="p-4 space-y-6 animate-slide-up">
+    <div className="p-4 space-y-4 animate-slide-up">
+      {/* --- YENİ EKLENEN GERİ BUTONU --- */}
+      <Button 
+        variant="outline" 
+        onClick={() => navigate(-1)} 
+        className="flex items-center gap-2"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Geri
+      </Button>
+      {/* --- YENİ EKLENEN GERİ BUTONU SONU --- */}
+
       <Card>
         <CardHeader>
           <CardTitle>Son İşlemler</CardTitle>

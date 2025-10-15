@@ -13,18 +13,20 @@ import { toast } from 'sonner';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { cn } from "@/lib/utils"; // cn utility'sini import ediyoruz
 
 interface SubjectCardProps {
   subject: Subject;
   onAddQuestions: (subjectId: string, counts: { correct: number, incorrect: number }, topic: string) => void;
 }
 
-const getColorVariant = (color: string) => {
+// Görsel temaya uygun yeni bir gradient fonksiyonu
+const getGradientColor = (color: string) => {
   switch (color) {
-    case 'primary': return 'gradient-primary';
-    case 'success': return 'gradient-success';
-    case 'warning': return 'gradient-warning';
-    default: return 'bg-secondary';
+    case 'primary': return 'from-primary/80 to-purple-500/80';
+    case 'success': return 'from-emerald-500/80 to-green-600/80';
+    case 'warning': return 'from-amber-500/80 to-orange-600/80';
+    default: return 'from-secondary to-muted';
   }
 };
 
@@ -78,15 +80,22 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
   };
 
   return (
-    <Card className="group shadow-card hover:shadow-elegant transition-all duration-300 hover:scale-[1.02] animate-bounce-in border border-border/50 hover:border-primary/20 dark:border-white/10">
+    <Card 
+      className={cn(
+        "bg-card backdrop-blur-sm", // YARI SAYDAM ARKA PLAN VE BLUR EFEKTİ
+        "border border-border", // HAFİF KENARLIK
+        "transition-all duration-300",
+        "hover:border-primary/80 hover:shadow-[0_0_20px_hsl(var(--primary)/0.5)]" // ÜZERİNE GELİNCE NEON PARLAMA
+      )}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`${getColorVariant(subject.color)} p-3 rounded-xl shadow-glow text-2xl`}>
+            <div className={`bg-gradient-to-br ${getGradientColor(subject.color)} p-3 rounded-xl shadow-lg text-2xl`}>
               {subject.icon}
             </div>
             <div>
-              <CardTitle className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
+              <CardTitle className="text-xl font-bold text-foreground">
                 {subject.name}
               </CardTitle>
               <CardDescription className="text-muted-foreground">
@@ -98,7 +107,7 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className={`h-6 w-full rounded-full flex items-center justify-center ${getColorVariant(subject.color)}`}>
+        <div className={`h-6 w-full rounded-full flex items-center justify-center bg-gradient-to-r ${getGradientColor(subject.color)}`}>
           <span className="text-white font-bold text-sm drop-shadow-[0_1px_1px_rgba(0,0,0,0.7)]">
             {totalCompleted} Soru Çözüldü
           </span>
@@ -151,7 +160,7 @@ export default function SubjectCard({ subject, onAddQuestions }: SubjectCardProp
           <Button 
             variant="outline" 
             size="icon" 
-            className="hover:gradient-primary hover:text-primary-foreground hover:border-primary transition-all duration-300"
+            className="hover:bg-primary/20 hover:text-primary hover:border-primary transition-all duration-300"
             onClick={handleOpenMebiApp}
           >
             <BookOpen className="h-4 w-4" />

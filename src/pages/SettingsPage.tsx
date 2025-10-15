@@ -121,21 +121,27 @@ export const SettingsPage = () => {
         </CardContent>
       </Card>
       
+      {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
       <Card className="shadow-card border-border/50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Swords className="h-5 w-5 text-primary" /> Meydan Okuma Bildirimi</CardTitle>
-          <CardDescription>Uygulamayı bir süre kullanmadığında seni motive etmek için bildirim gönderir.</CardDescription>
+          <CardDescription>
+            Başka bir kullanıcı sana meydan okuduğunda bildirim al.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="space-y-1">
-              <Label htmlFor="challenge-reminder">Hatırlatıcıyı Etkinleştir</Label>
-              <p className="text-sm text-muted-foreground">3 gün ara verdiğinde bildirim al.</p>
+              <Label htmlFor="challenge-reminder">Bildirimleri Etkinleştir</Label>
+              <p className="text-sm text-muted-foreground">
+                Yeni düello davetlerini bildirim olarak al.
+              </p>
             </div>
             <Switch id="challenge-reminder" checked={notificationSettings.challengeReminder ?? false} onCheckedChange={handleChallengeReminderToggle} />
           </div>
         </CardContent>
       </Card>
+      {/* --- DEĞİŞİKLİK BURADA BİTİYOR --- */}
       
       <Card className="shadow-card border-border/50">
         <CardHeader>

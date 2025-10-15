@@ -161,7 +161,7 @@ export const avatars: Avatar[] = [
     "name": "Yarışçı",
     "image": "/avatars/racer.png",
     "unlockMethod": "achievement",
-    "achievementId": "daily-quiz-25"
+    "achievementId": "daily-quiz-50" // DEĞİŞTİRİLDİ (eski: daily-quiz-25, ama 25 diye bir başarım yok)
   },
   {
     "id": "scientist",
@@ -189,7 +189,7 @@ export const avatars: Avatar[] = [
     "name": "Kraliçe",
     "image": "/avatars/queen.png",
     "unlockMethod": "achievement",
-    "achievementId": "daily-quiz-30"
+    "achievementId": "daily-quiz-100" // DEĞİŞTİRİLDİ (eski: daily-quiz-30, ama 30 diye bir başarım yok)
   },
   {
     "id": "skater",
@@ -357,21 +357,21 @@ export const avatars: Avatar[] = [
     "name": "Crow",
     "image": "/avatars/crow.png",
     "unlockMethod": "achievement",
-    "achievementId": "math-novice"
+    "achievementId": "historian" // DEĞİŞTİRİLDİ (eski: math-novice)
   },
   {
     "id": "sponge bob",
     "name": "Sponge Bob",
     "image": "/avatars/sponge.png",
     "unlockMethod": "achievement",
-    "achievementId": "first-question"
+    "achievementId": "perfect-performance" // DEĞİŞTİRİLDİ (eski: first-question)
   },
   {
     "id": "el primo",
     "name": "El Primo",
     "image": "/avatars/elprimo.png",
     "unlockMethod": "achievement",
-    "achievementId": "science-explorer"
+    "achievementId": "weekend-warrior" // DEĞİŞTİRİLDİ (eski: science-explorer)
   },
   {
     "id": "mortis",
@@ -385,7 +385,7 @@ export const avatars: Avatar[] = [
     "name": "KungFu Panda",
     "image": "/avatars/po.png",
     "unlockMethod": "achievement",
-    "achievementId": "fifty-questions"
+    "achievementId": "night-owl" // DEĞİŞTİRİLDİ (eski: fifty-questions)
   },
   // BAŞARIM GEREKSİNİMİNDEN SATIN ALMAYA GEÇEN AVATARLAR
   {

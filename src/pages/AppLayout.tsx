@@ -16,7 +16,6 @@ import { useStudyData } from '@/hooks/useStudyData';
 import { useCoreData } from '@/hooks/useCoreData';
 import { useScheduler } from '@/hooks/useScheduler';
 
-// Context tipi basitleştirildi
 export type AppContextType =
   ReturnType<typeof useAuthContext> &
   ReturnType<typeof useCoreData> &
@@ -212,7 +211,10 @@ export default function AppLayout() {
           userRole={userRole}
         />
         <main>
-          <ChallengeNotification challenges={pendingChallenges} onDismiss={dismissChallenge} />
+          {/* --- DEĞİŞİKLİK BURADA: Bildirimler sadece ayar açıksa gösterilecek --- */}
+          {scheduler.notificationSettings.challengeReminder && (
+            <ChallengeNotification challenges={pendingChallenges} onDismiss={dismissChallenge} />
+          )}
           <div className="animate-slide-up">
             <Outlet context={contextValue} />
           </div>
