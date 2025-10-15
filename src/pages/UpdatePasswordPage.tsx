@@ -1,5 +1,4 @@
 // src/pages/UpdatePasswordPage.tsx
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/supabaseClient';
@@ -10,11 +9,12 @@ import { toast } from 'sonner';
 import { KeyRound, CheckCircle, AlertTriangle } from 'lucide-react';
 
 // Kullanıcı dostu hata mesajları için bir yardımcı fonksiyon
-const getFriendlyErrorMessage = (message: string) => {
-    if (message.includes('Token has expired')) {
+const getFriendlyErrorMessage = (message?: string) => {
+    if (!message) return 'Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
+    if (message.includes('Token has expired') || message.toLowerCase().includes('expired')) {
         return 'Bu şifre sıfırlama linkinin süresi dolmuş. Lütfen giriş sayfasından yeni bir tane isteyin.';
     }
-    if (message.includes('Invalid token')) {
+    if (message.includes('Invalid token') || message.toLowerCase().includes('invalid')) {
         return 'Geçersiz bir link kullandınız. Lütfen e-postanızdaki linke doğru tıkladığınızdan emin olun.';
     }
     return 'Beklenmedik bir hata oluştu. Lütfen daha sonra tekrar deneyin.';
@@ -25,22 +25,39 @@ export default function UpdatePasswordPage() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
-    const [error, setError] = useState<string | null>(null); // Hata durumunu saklamak için
+    const [error, setError] = useState<string | null>(null);
 
     const navigate = useNavigate();
 
     useEffect(() => {
         let recoveryVerified = false;
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            // İYİLEŞTİRME: Sadece event'e değil, session'ın varlığına da bakıyoruz.
-            if (event === 'PASSWORD_RECOVERY' && session) {
+        // 1) URL'den token/type kontrolü (bazı tarayıcı/gateway senaryolarında onAuthStateChange tetiklenmeyebilir)
+        try {
+            const params = new URL(window.location.href).searchParams;
+            const type = params.get('type');
+            const accessToken = params.get('access_token') || params.get('token'); // bazen token parametre ismi değişebilir
+            if (type === 'recovery' && accessToken) {
                 recoveryVerified = true;
                 toast.info("Kimliğiniz doğrulandı, yeni şifrenizi belirleyebilirsiniz.");
             }
+        } catch (e) {
+            // ignore
+        }
+
+        // 2) Fallback: onAuthStateChange ile PASSWORD_RECOVERY bekle
+        const { data } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+                if (session) {
+                    recoveryVerified = true;
+                    toast.info("Kimliğiniz doğrulandı, yeni şifrenizi belirleyebilirsiniz.");
+                }
+            }
         });
-        
-        // Kullanıcı sayfaya geldiğinde token geçersizse veya yoksa bir süre sonra hata gösterelim.
+
+        const subscription = data?.subscription;
+
+        // Eğer kısa sürede doğrulanmazsa hata göster
         const timer = setTimeout(() => {
             if (!recoveryVerified) {
                 setError("Bu sayfaya erişim için geçerli bir şifre sıfırlama linki kullanmalısınız.");
@@ -48,7 +65,13 @@ export default function UpdatePasswordPage() {
         }, 2000);
 
         return () => {
-            subscription.unsubscribe();
+            // cleanup
+            try {
+                subscription?.unsubscribe();
+            } catch (e) {
+                // bazı sdk versiyonlarında farklı olabilir, güvenli fallback
+                if (typeof data?.unsubscribe === 'function') data.unsubscribe();
+            }
             clearTimeout(timer);
         };
     }, []);
@@ -67,16 +90,22 @@ export default function UpdatePasswordPage() {
         const { error: updateError } = await supabase.auth.updateUser({ password });
 
         if (updateError) {
-            // İYİLEŞTİRME: Hata mesajlarını kullanıcı dostu hale getiriyoruz.
             toast.error(getFriendlyErrorMessage(updateError.message));
-        } else {
-            toast.success('Şifren başarıyla güncellendi!');
-            setIsSuccess(true);
+            setLoading(false);
+            return;
         }
+
+        toast.success('Şifren başarıyla güncellendi!');
+        setIsSuccess(true);
+
+        // Kısa bir bekleme sonrası yönlendir
+        setTimeout(() => {
+            navigate('/login');
+        }, 1200);
+
         setLoading(false);
     };
-    
-    // Eğer bir yetkilendirme hatası varsa, ana formu gösterme
+
     if (error) {
          return (
             <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-slide-up">
@@ -114,7 +143,7 @@ export default function UpdatePasswordPage() {
             </div>
         );
     }
-    
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-background p-4 animate-slide-up">
             <Card className="w-full max-w-md bg-card backdrop-blur-sm border border-border">
