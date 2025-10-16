@@ -65,24 +65,25 @@ export const useAuth = (isMuted: boolean) => {
     };
   }, []);
 
+  // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
   const handleLogin = async () => {
     if (!username || !password) {
       toast.error("Kullanıcı adı ve şifre alanları boş bırakılamaz.");
       return;
     }
     try {
-      const { data: userData, error: userError } = await supabase
-        .from('kullanicilar')
-        .select('email')
-        .eq('kullanici_adi', username.toLowerCase())
-        .single();
+      // Adım 1: Kullanıcı adına karşılık gelen e-postayı güvenli fonksiyon ile al
+      const { data: email, error: rpcError } = await supabase.rpc('get_email_for_username', {
+        p_username: username.toLowerCase()
+      });
 
-      if (userError || !userData) {
+      if (rpcError || !email) {
         throw new Error("Kullanıcı adı veya şifre hatalı.");
       }
 
+      // Adım 2: Alınan e-posta ile giriş yapmayı dene
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: userData.email,
+        email: email,
         password: password,
       });
 
@@ -96,6 +97,7 @@ export const useAuth = (isMuted: boolean) => {
       toast.error(error.message);
     }
   };
+  // --- DEĞİŞİKLİK BURADA BİTİYOR ---
   
   const handleNewStudentRegistration = async (): Promise<boolean> => {
     if (!regFullName || !regClassName || !regCoachCode || !regEmail || !regPassword || !regConfirmPassword) {
@@ -189,7 +191,7 @@ export const useAuth = (isMuted: boolean) => {
     }
   };
 
-  const handleLogout = async (p0: boolean) => { 
+  const handleLogout = async () => { 
     await supabase.auth.signOut({ scope: 'local' });
     navigate('/login', { replace: true });
   };

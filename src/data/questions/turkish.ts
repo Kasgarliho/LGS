@@ -166,8 +166,8 @@ export const turkishQuestions: Question[] = [
   {
     id: 'tur_new_16', subjectId: 'turkish', topic: 'Yazım Kuralları', difficulty: 'medium',
     question: 'Aşağıdaki cümlelerin hangisinde sayıların yazımı ile ilgili bir yanlışlık yapılmıştır?',
-    options: ['Sınavda 15\'inci oldum.', 'Okulda on beş gün kaldık.', 'Saat 16.30\'da buluşalım.', 'Çek üzerine yanlız onbin tl yazdı.'], correctAnswer: 3,
-    explanation: 'Para ile ilgili işlemlerde sayılar bitişik yazılır. Ancak "yalnız" kelimesi "yanlız" şeklinde yanlış yazılmıştır. Ayrıca "on bin" ayrı yazılmalıdır.'
+    options: ['Sınavda 15\'inci oldum.', 'Okulda on beş gün kaldık.', 'Saat 16.30\'da buluşalım.', 'Çek üzerine yanlız on bin tl yazdı.'], correctAnswer: 3,
+    explanation: '"Yalnız" kelimesi "yanlız" şeklinde yanlış yazılmıştır. Ayrıca yazı ile yazılan sayılar (on bin) genellikle ayrı yazılır; sadece çek/senet gibi ticari belgelerde bitişik yazılır.'
   },
   {
     id: 'tur_new_17', subjectId: 'turkish', topic: 'Cümle Türleri', difficulty: 'medium',
@@ -193,12 +193,6 @@ export const turkishQuestions: Question[] = [
     options: ['Kişileştirme', 'Benzetme', 'Abartma', 'Tezat'], correctAnswer: 1,
     explanation: 'Çocuğun gücü, aslanın gücüne benzetilmiştir. "gibi" edatı bu benzetmeyi kurmuştur.'
   },
-    {
-    id: 'txt_tur_1', subjectId: 'turkish', topic: 'Yazım Kuralları', difficulty: 'easy',
-    question: 'Aşağıdaki cümlelerin hangisinde “de” bağlacı yanlış yazılmıştır?',
-    options: ['Annem de bizimle gelecek.', 'Kitaplarıda çantama koydum.', 'O da çok yorulmuştu.', 'Biz de çok heyecanlandık.'], correctAnswer: 1,
-    explanation: "Bağlaç olan 'de' ve 'da' her zaman ayrı yazılır. 'Kitaplarıda' kelimesindeki 'da' bitişik yazılarak bulunma hal eki gibi gösterilmiştir, bu bir yazım hatasıdır. Doğrusu 'Kitapları da' olmalıydı."
-  },,
   {
     id: 'tur_new_21', subjectId: 'turkish', topic: 'Cümlede Anlam', difficulty: 'medium',
     question: 'Aşağıdaki cümlelerin hangisi kanıtlanabilirlik açısından diğerlerinden farklıdır?',
@@ -231,7 +225,7 @@ export const turkishQuestions: Question[] = [
   },
   {
     id: 'tur_new_26', subjectId: 'turkish', topic: 'Fiilimsiler', difficulty: 'hard',
-    question: '"Çocuk, güle oynaya evine gitti." cümlesindeki altı çizili ikileme hangi türde bir fiilimsiden oluşmuştur?',
+    question: '"Çocuk, güle oynaya evine gitti." cümlesindeki fiilimsi ikilemesi hangi türdedir?',
     options: ['İsim-fiil', 'Sıfat-fiil', 'Zarf-fiil', 'Fiilimsi değildir'], correctAnswer: 2,
     explanation: '"Güle oynaya" ikilemesindeki "-a ... -a" ekleri zarf-fiil ekidir ve fiilin nasıl yapıldığını belirtir.'
   },
@@ -255,9 +249,9 @@ export const turkishQuestions: Question[] = [
   },
   {
     id: 'tur_new_30', subjectId: 'turkish', topic: 'Anlatım Bozuklukları', difficulty: 'hard',
-    question: 'Aşağıdaki cümlelerin hangisinde "çatı uyuşmazlığı"ndan kaynaklanan bir anlatım bozukluğu vardır?',
-    options: ['Bütün ödevler bitirilip okula öyle gidildi.', 'Erkenden kalkıp yola çıkmalısın.', 'Kitaplar raflara dizilerek satışa sunuldu.', 'Tüm hazırlıklar tamamlanıp misafirler beklendi.'], correctAnswer: 0,
-    explanation: '"Bitirilip" edilgen çatılı bir fiilimsiyken, "gidildi" de edilgen çatılı bir yüklemdir. Bu cümlede bir çatı uyuşmazlığı yoktur. (Bu soruyu düzeltiyorum, doğru cevaplı şık ekliyorum) Doğru soru: Hangisinde çatı uyuşmazlığı vardır? Seçenek: "Sabah erkenden kalkıp, okula gidildi." Cevap: "Kalkıp" (etken) ve "gidildi" (edilgen) arasında çatı uyuşmazlığı vardır.'
+    question: 'Aşağıdaki cümlelerin hangisinde çatı uyuşmazlığından kaynaklanan bir anlatım bozukluğu vardır?',
+    options: ['Sabah erkenden kalkıp okula gidildi.', 'Bütün ödevler bitirilip rafa konuldu.', 'Yemek yiyip hemen yattı.', 'Konu dikkatle dinlendi.'], correctAnswer: 0,
+    explanation: '"Kalkıp" fiilimsisi etken çatılı iken, cümlenin yüklemi olan "gidildi" edilgen çatılıdır. Fiilimsi ile yüklemin çatıları uyumlu olmalıdır. Doğrusu "Sabah erkenden kalkıp okula gitti." veya "Sabah erkenden kalkılarak okula gidildi." olmalıydı.'
   },
   {
     id: 'tur_new_31', subjectId: 'turkish', topic: 'Yazım Kuralları', difficulty: 'medium',
@@ -305,7 +299,7 @@ export const turkishQuestions: Question[] = [
     id: 'tur_new_38', subjectId: 'turkish', topic: 'Yazım Kuralları', difficulty: 'medium',
     question: 'Aşağıdaki cümlelerin hangisinde kısaltmaların yazımıyla ilgili bir yanlışlık yapılmıştır?',
     options: ['TÜBİTAK\'ın projesi ilgi gördü.', 'THY\'de yeni bir dönem başladı.', 'PTT\'ye uğramam gerekiyor.', 'T.C.\'nin kurucusu Atatürk\'tür.'], correctAnswer: 3,
-    explanation: 'Büyük harflerle yapılan kısaltmalara getirilen eklerde kısaltmanın son harfinin okunuşu esas alınır. Ancak gelenekleşmiş olan "T.C." (Türkiye Cumhuriyeti) kısaltmasında nokta kullanılır ve gelen ekler kesme işaretiyle ayrılmaz. Doğrusu "T.C.nin" şeklinde olmalıydı ya da genellikle T.C. den sonra ek getirilmez.'
+    explanation: 'Büyük harflerle yapılan kısaltmalara getirilen eklerde kısaltmanın son harfinin okunuşu esas alınır. Ancak gelenekleşmiş olan "T.C." (Türkiye Cumhuriyeti) kısaltmasında nokta kullanılır ve gelen ek kesme işaretiyle ayrılmaz. Doğrusu "T.C.nin" şeklinde olmalıydı.'
   },
   {
     id: 'tur_new_39', subjectId: 'turkish', topic: 'Fiilde Çatı', difficulty: 'hard',
@@ -379,5 +373,4 @@ export const turkishQuestions: Question[] = [
     options: ['Giriş bölümünde', 'Herhangi bir yerinde olabilir', 'Sonuç bölümünde', 'Gelişme bölümünde'], correctAnswer: 2,
     explanation: 'Yazar, anlattıklarını toparlayıp varmak istediği sonucu, yani ana düşünceyi genellikle paragrafın veya metnin sonuç bölümünde özetleyici bir ifadeyle verir.'
   },
-
 ];
