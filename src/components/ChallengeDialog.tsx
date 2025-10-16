@@ -77,7 +77,6 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      {/* === DEĞİŞİKLİK BURADA BAŞLIYOR: max-h-[80vh] ve flex eklendi === */}
       <DialogContent className="max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Bir Arkadaşına Meydan Oku</DialogTitle>
@@ -94,33 +93,35 @@ export function ChallengeDialog({ open, onOpenChange, unitId, score, time }: Cha
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {/* === DEĞİŞİKLİK: Listenin etrafına ScrollArea eklendi ve altındaki div'e class atandı === */}
-        <div className="flex-1 min-h-0">
-          <ScrollArea className="h-full pr-4">
-            <div className="space-y-2">
-              {loading && <p className="text-center text-muted-foreground py-4">Yükleniyor...</p>}
-              {!loading && filteredOpponents.length === 0 && (
-                <p className="text-center text-muted-foreground py-4">Meydan okunacak kimse bulunamadı.</p>
-              )}
-              {filteredOpponents.map(opponent => (
-                <div key={opponent.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={getAvatarImage(opponent.user_avatar)}
-                      alt={opponent.user_name}
-                      className="w-10 h-10 rounded-full"
-                    />
-                    <span className="font-medium">{opponent.user_name}</span>
-                  </div>
-                  <Button size="sm" onClick={() => handleChallenge(opponent.user_id)}>
-                    <Send className="h-4 w-4 mr-2" />
-                    Gönder
-                  </Button>
+        
+        {/* --- DEĞİŞİKLİK BURADA YAPILDI --- */}
+        {/* Liste alanına, ekran yüksekliğine göre değil, sabit bir yükseklik veriyoruz. */}
+        <ScrollArea className="h-72 pr-4 mt-4"> {/* `h-full` yerine `h-72` (veya `h-[40vh]`) gibi bir değer kullanıyoruz. */}
+          <div className="space-y-2">
+            {loading && <p className="text-center text-muted-foreground py-4">Yükleniyor...</p>}
+            {!loading && filteredOpponents.length === 0 && (
+              <p className="text-center text-muted-foreground py-4">Meydan okunacak kimse bulunamadı.</p>
+            )}
+            {filteredOpponents.map(opponent => (
+              <div key={opponent.user_id} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted">
+                <div className="flex items-center gap-3">
+                  <img
+                    src={getAvatarImage(opponent.user_avatar)}
+                    alt={opponent.user_name}
+                    className="w-10 h-10 rounded-full"
+                  />
+                  <span className="font-medium">{opponent.user_name}</span>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+                <Button size="sm" onClick={() => handleChallenge(opponent.user_id)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Gönder
+                </Button>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+        {/* --- DEĞİŞİKLİK BURADA BİTTİ --- */}
+
       </DialogContent>
     </Dialog>
   );
